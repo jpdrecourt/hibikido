@@ -43,11 +43,6 @@ dev = [
     "pytest>=7.0.0",
 ]
 
-# GPU support for faster embeddings (optional)
-gpu = [
-    "faiss-gpu>=1.7.0",
-    "torch>=1.9.0",
-]
 
 
 [project.scripts]
