@@ -2,7 +2,7 @@
 Orchestrator for Hibikidō (Enhanced for Manifestation Protocol)
 ===============================================================
 
-Manages time-frequency niches and sends manifestations when sounds can play.
+Manages time-perceptual niches using Bark band cosine similarity.
 All results go through the queue - orchestrator decides when to manifest.
 """
 
@@ -52,8 +52,8 @@ class Orchestrator:
             manifestation_data: {
                 "index": int, "collection": str, "score": float,
                 "path": str, "description": str, "start": float, "end": float,
-                "parameters": str, "sound_id": str, "freq_low": float, 
-                "freq_high": float, "duration": float
+                "parameters": str, "sound_id": str, "bark_bands": List[float], 
+                "duration": float
             }
             
         Returns:
