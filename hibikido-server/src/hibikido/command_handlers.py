@@ -53,6 +53,10 @@ class CommandHandlers:
             # Filter to segments only (MVP requirement)
             segment_results = [r for r in results if r["collection"] == "segments"]
             
+            # Filter by minimum score
+            min_score = self.config['search']['min_score']
+            segment_results = [r for r in segment_results if r["score"] >= min_score]
+            
             if not segment_results:
                 self.osc_handler.send_confirm("no segment resonance found")
                 return
