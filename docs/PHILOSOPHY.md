@@ -95,4 +95,4 @@ _Each manifestation must find its proper moment in the harmonic order. The Chōw
 
 ---
 
-![Hibikidō Sigil](../assets/hibikido-sigil.png)
+![Hibikidō Sigil](hibikido-sigil.png)
