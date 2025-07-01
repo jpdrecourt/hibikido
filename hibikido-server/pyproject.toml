@@ -52,9 +52,10 @@ gpu = [
     "torch>=1.9.0",
 ]
 
-# Extended audio analysis tools (optional)
+# Extended audio analysis tools (optional - currently unused)
 audio = [
-    "aubio>=0.4.9",
+    # Reserved for future real-time audio analysis features
+    # "aubio>=0.4.9",  # Commented out - not currently used
 ]
 
 [project.scripts]
