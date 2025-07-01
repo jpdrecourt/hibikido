@@ -64,7 +64,7 @@ class CommandHandlers:
                 freq_low = document.get("freq_low", 200)
                 freq_high = document.get("freq_high", 2000)
                 duration = document.get("duration", 1.0)
-                sound_id = str(document.get("_id", "unknown"))
+                sound_id = str(getattr(document, 'doc_id', document.get('source_path', 'unknown')))
                 
                 # Prepare manifestation data
                 manifestation_data = {

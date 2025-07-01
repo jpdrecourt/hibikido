@@ -12,9 +12,10 @@ Interaction through OSC protocol only - use HibikidoServer as the single entry p
 __version__ = "0.1.2"
 __author__ = "Jean-Philippe Drecourt"
 
-# Public API - single entry point
-from .main_server import HibikidoServer
+# This package is designed to be run as a server application.
+# Use: python -m hibikido.main_server
+# 
+# For programmatic access, import HibikidoServer directly:
+# from hibikido.main_server import HibikidoServer
 
-__all__ = [
-    "HibikidoServer",
-]
+__all__ = []

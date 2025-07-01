@@ -16,13 +16,12 @@ logger = logging.getLogger(__name__)
 def get_default_config() -> Dict[str, Any]:
     """Default configuration settings."""
     return {
-        'mongodb': {
-            'uri': 'mongodb://localhost:27017',
-            'database': 'hibikido'
+        'database': {
+            'data_dir': '../hibikido-data/database'
         },
         'embedding': {
             'model_name': 'all-MiniLM-L6-v2',
-            'index_file': 'data/hibikido.index'
+            'index_file': '../hibikido-data/index/hibikido.index'
         },
         'osc': {
             'listen_ip': '127.0.0.1',
