@@ -1,0 +1,2 @@
+# This file ensures the hibikido-data directory structure is preserved
+# The actual contents (database files, indices, audio) are gitignored

@@ -1,0 +1,74 @@
+{
+  "_comment": "Sample Hibikidō configuration - rename to config.json to use",
+  "_usage": "Run with: hibikido-server --config config.json",
+  
+  "database": {
+    "_comment": "TinyDB database configuration (portable JSON files)",
+    "data_dir": "../hibikido-data/database"
+  },
+  
+  "embedding": {
+    "_comment": "Neural embedding and FAISS index settings",
+    "model_name": "all-MiniLM-L6-v2",
+    "index_file": "../hibikido-data/index/hibikido.index"
+  },
+  
+  "osc": {
+    "_comment": "OSC communication settings",
+    "listen_ip": "127.0.0.1",
+    "listen_port": 9000,
+    "send_ip": "127.0.0.1", 
+    "send_port": 9001
+  },
+  
+  "search": {
+    "_comment": "Semantic search parameters",
+    "top_k": 10,
+    "min_score": 0.3
+  },
+  
+  "orchestrator": {
+    "_comment": "Time-frequency niche management",
+    "overlap_threshold": 0.2,
+    "time_precision": 0.1
+  },
+  
+  "_examples": {
+    "_comment": "Example configurations for different sound collections",
+    
+    "forest_sounds": {
+      "database": {
+        "data_dir": "../hibikido-data/forest-sounds/database"
+      },
+      "embedding": {
+        "index_file": "../hibikido-data/forest-sounds/index/forest-sounds.index"
+      }
+    },
+    
+    "industrial_textures": {
+      "database": {
+        "data_dir": "../hibikido-data/industrial-textures/database"
+      },
+      "embedding": {
+        "index_file": "../hibikido-data/industrial-textures/index/industrial-textures.index"
+      },
+      "orchestrator": {
+        "overlap_threshold": 0.15,
+        "time_precision": 0.05
+      }
+    },
+    
+    "vocal_experiments": {
+      "database": {
+        "data_dir": "../hibikido-data/vocal-experiments/database"
+      },
+      "embedding": {
+        "index_file": "../hibikido-data/vocal-experiments/index/vocal-experiments.index"
+      },
+      "search": {
+        "top_k": 15,
+        "min_score": 0.2
+      }
+    }
+  }
+}
