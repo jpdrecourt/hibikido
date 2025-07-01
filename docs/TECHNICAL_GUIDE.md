@@ -4,7 +4,7 @@ Complete technical reference for the semantic audio search system with real-time
 
 ## System Architecture
 
-Hibikidō implements neural semantic search over a hierarchical audio database with real-time time-frequency niche management. The core loop: natural language → embedding vector → similarity search → queue all results → orchestrator evaluation → OSC manifestation when conditions allow.
+Hibikidō implements neural semantic search over a hierarchical audio database with real-time Bark band niche management using perceptual audio analysis. The core loop: natural language → embedding vector → similarity search → queue all results → orchestrator evaluation → OSC manifestation when conditions allow.
 
 ```mermaid
 graph TD
@@ -12,7 +12,7 @@ graph TD
     B --> C[TinyDB Results]
     C --> D[Queue ALL Results]
     D --> E[Chōwasha<br/>Orchestrator]
-    E --> F{Frequency<br/>Conflict?}
+    E --> F{Bark Band<br/>Similarity?}
     F -->|No Conflict| G[OSC /manifest<br/>Immediate]
     F -->|Conflict| H[FIFO Queue<br/>Auto-retry]
     H --> I[Background Check<br/>Every 100ms]
@@ -114,17 +114,15 @@ Send to the server (default: `127.0.0.1:9000`):
 /invoke "your description here"
 → Multiple /manifest messages as sounds become available (no completion signal)
 
-/add_recording "sounds/wind/forest_01.wav" "description" "morning wind through oak trees"
-→ Add new recording and auto-create full-length segment (0.0-1.0)
-
-/add_recording "sounds/wind/forest_01.wav" "description" "morning wind through oak trees" "duration" 45.2 "freq_low" 200 "freq_high" 8000
-→ Add recording with metadata - auto-segment inherits frequency range and duration for orchestration
+/add_recording "forest_01.wav" "morning wind through oak trees"
+→ Simplified syntax: automatic duration calculation and Bark band analysis
+→ Auto-creates full-length segment (0.0-1.0) with 24-band spectral fingerprint
 
 /add_effect "effects/reverb/cathedral.dll" '{"description":"gothic cathedral reverb"}'
 → Add new effect and auto-create default preset
 
-/add_segment "sounds/wind/forest_01.wav" "description" "wind gusts" "start" 0.1 "end" 0.6 "segmentation_id" "manual" "freq_low" 200 "freq_high" 2000 "duration" 3.5
-→ Add new segment with timing, frequency range, and duration metadata for orchestration
+/add_segment "forest_01.wav" "description" "wind gusts" "start" 0.1 "end" 0.6 "segmentation_id" "manual" "duration" 3.5
+→ Add new segment with timing and duration metadata (Bark bands calculated automatically)
 
 /add_preset "warm cathedral ambience" '{"effect_path":"effects/reverb/cathedral.dll", "parameters":[0.8, 0.3, 0.9]}'
 → Add new effect preset with parameters
@@ -171,7 +169,7 @@ Note: Manifestations arrive over time as the orchestrator permits, following har
 Hibikidō organizes sound through hierarchical relationships using TinyDB:
 
 - **Recordings**: Source audio files with metadata
-- **Segments**: Timestamped slices within recordings with frequency/duration metadata
+- **Segments**: Timestamped slices within recordings with Bark band spectral analysis and duration metadata
 - **Effects**: Audio processing tools with semantic presets  
 - **Presets**: Effect configurations with parameters
 - **Performances**: Session logs of invocations over time
@@ -204,12 +202,13 @@ hibikido-data/
 
 ### orchestrator.py - Harmonic Management
 
-The orchestrator manages time-frequency niches, serving as guardian and mediator between human intention and harmonic law. Through logarithmic frequency analysis and temporal wisdom, it creates the harmonic spacing that prevents conflicts while allowing maximum sonic richness.
+The orchestrator manages Bark band niches, serving as guardian and mediator between human intention and harmonic law. Through perceptual Bark scale analysis and cosine similarity, it creates the harmonic spacing that prevents spectral conflicts while allowing maximum sonic richness.
 
 **Core Concepts**:
 
-- **Niches**: Active sound registrations with `{sound_id, start_time, end_time, freq_low, freq_high}`
-- **Logarithmic Overlap**: Uses `log2()` for octave-based frequency analysis matching human hearing
+- **Niches**: Active sound registrations with `{sound_id, start_time, end_time, bark_bands}`
+- **Bark Band Analysis**: Uses 24 critical frequency bands (0Hz to ~15.5kHz) matching human auditory perception
+- **Cosine Similarity**: Compares spectral energy distributions between sounds using normalized Bark vectors
 - **FIFO Queue**: All search results await their turn in first-in-first-out order
 - **Auto-Manifestation**: Background thread automatically manifests queued sounds when niches become available
 
@@ -217,12 +216,12 @@ The orchestrator manages time-frequency niches, serving as guardian and mediator
 
 - `queue_manifestation(manifestation_data)`: Queue all search results
 - `update()`: Periodic cleanup and queue processing (called every 100ms)
-- `_has_frequency_overlap(f1_low, f1_high, f2_low, f2_high)`: Logarithmic overlap detection
+- `_find_conflict(bark_bands, now)`: Cosine similarity conflict detection using Bark bands
 - `_process_queue()`: Main manifestation logic - sends `/manifest` when niches free
 
 **Configuration**:
 
-- `overlap_threshold`: 0.2 (20% logarithmic overlap allowed)
+- `bark_similarity_threshold`: 0.5 (50% cosine similarity triggers conflict)
 - `time_precision`: 0.1 (100ms manifestation cycle)
 
 ### main_server.py - Central Recognition
@@ -250,59 +249,111 @@ Uses sentence-transformers for semantic search with FAISS index for vector simil
 
 Orchestration happens after semantic search.
 
+### bark_analyzer.py - Perceptual Audio Analysis
+
+The Bark analyzer extracts perceptually-accurate spectral fingerprints from audio files using the Bark scale, which models human auditory perception.
+
+**Core Concepts**:
+
+- **24 Critical Bands**: Covers 0Hz to ~15.5kHz using psychoacoustic Bark scale frequencies
+- **Energy Normalization**: L2-normalized vectors enable cosine similarity comparison
+- **Pre-computation**: Analysis during `/add_recording` ensures zero-latency orchestration
+- **Duration Calculation**: Automatic audio file duration detection
+
+**Key Methods**:
+
+- `analyze_audio_file(path, start_time, end_time)`: Extract Bark bands and duration from audio segment
+- `BarkAnalyzer.cosine_similarity(vector1, vector2)`: Compare spectral similarity (0.0-1.0)
+- `BarkAnalyzer._compute_bark_bands(audio, sr)`: Internal 24-band energy extraction using librosa
+
+**Usage Example**:
+
+```python
+from hibikido.bark_analyzer import analyze_audio_file, BarkAnalyzer
+
+# Analyze full audio file
+bark_bands, duration = analyze_audio_file("path/to/audio.wav")
+print(f"Duration: {duration:.2f}s, Bark energy sum: {sum(bark_bands):.3f}")
+
+# Analyze segment (normalized time 0.0-1.0)
+bark_bands, duration = analyze_audio_file("path/to/audio.wav", 0.1, 0.6)
+
+# Compare similarity between two sounds
+similarity = BarkAnalyzer.cosine_similarity(bark_bands1, bark_bands2)
+conflict = similarity > 0.5  # Using default threshold
+```
+
 ### tinydb_manager.py - Hierarchical Storage
 
 **Segment Fields for Orchestration**:
 
-- `freq_low`: Frequency range lower bound (Hz)
-- `freq_high`: Frequency range upper bound (Hz)
+- `bark_bands`: Array of 24 normalized energy values for Bark frequency bands (0.0-1.0)
 - `duration`: Sound duration (seconds)
 
-These fields enable the orchestrator to make harmonic decisions.
+The Bark bands vector enables perceptually-accurate harmonic decisions using cosine similarity.
 
 ## Development Patterns
 
-### Adding Orchestration to Existing Segments
+### Adding Bark Band Analysis to Existing Segments
 
-Update existing segments with frequency metadata:
+Rebuild existing segments with Bark band analysis:
 
 ```python
-# Update segments without frequency data
+# Re-analyze existing audio files for Bark bands
+from hibikido.bark_analyzer import analyze_audio_file
 from tinydb import TinyDB, Query
+
 db = TinyDB('hibikido-data/database/segments.json')
 Segment = Query()
 
-db.update({
-    'freq_low': 200,    # Default low frequency
-    'freq_high': 2000,  # Default high frequency  
-    'duration': 1.0,    # Default duration
-}, ~Segment.freq_low.exists())
+# Find segments without Bark bands
+segments_to_update = db.search(~Segment.bark_bands.exists())
+
+for segment in segments_to_update:
+    audio_path = f"../hibikido-data/audio/{segment['source_path']}"
+    bark_bands, duration = analyze_audio_file(audio_path, 
+                                             segment['start'], 
+                                             segment['end'])
+    
+    db.update({
+        'bark_bands': bark_bands,
+        'duration': duration
+    }, Segment.doc_id == segment.doc_id)
 ```
 
-### Configuring Orchestration
+### Configuring Bark Band Orchestration
 
 Modify orchestrator settings in `config.json`:
 
 ```json
 {
   "orchestrator": {
-    "overlap_threshold": 0.15, // 15% overlap threshold
-    "time_precision": 0.05     // 50ms manifestation cycle
+    "bark_similarity_threshold": 0.3,  // 30% similarity threshold (more permissive)
+    "time_precision": 0.05             // 50ms manifestation cycle
+  },
+  "audio": {
+    "audio_directory": "../hibikido-data/audio"  // Path for relative audio files
   }
 }
 ```
 
+**Similarity Threshold Guidelines**:
+- `0.3`: Very permissive - allows similar sounds to coexist
+- `0.5`: Balanced - good separation for most use cases (default)
+- `0.7`: Strict - only very different sounds can play simultaneously
+- `0.9`: Ultra-strict - maximum spectral separation
+
 ### Debugging Orchestration
 
-**Monitor niche management**:
+**Monitor Bark band niche management**:
 
 ```bash
 # Enable orchestrator debug logging
 python -m hibikido.main_server --log-level DEBUG
 
 # Watch for these log messages:
-# "Queued manifestation: sound_id [freq_low-freq_high Hz]"
-# "Manifested: sound_id [freq_low-freq_high Hz] (queued for Xs)"
+# "Queued manifestation: sound_id [Bark bands sum: X.XXX]"
+# "Manifested: sound_id [Bark sum: X.XXX] (queued for Xs)"
 # "Queue has N items remaining"
 ```
 
@@ -337,8 +388,11 @@ Override defaults with `config.json`:
     "min_score": 0.3
   },
   "orchestrator": {
-    "overlap_threshold": 0.2,
+    "bark_similarity_threshold": 0.5,
     "time_precision": 0.1
+  },
+  "audio": {
+    "audio_directory": "../hibikido-data/audio"
   }
 }
 ```
@@ -349,17 +403,21 @@ Override defaults with `config.json`:
 - **Manifestation Latency**: 100ms average (depends on conflicts)
 - **Memory Overhead**: ~100 bytes per queued manifestation
 - **Queue Processing**: Up to 5 manifestations per 100ms cycle
-- **Frequency Analysis**: Logarithmic calculation optimized for real-time use
+- **Bark Band Analysis**: Pre-computed 24-band spectral analysis for zero-latency orchestration
+- **Cosine Similarity**: Optimized vector comparison using normalized Bark bands
 - **Background Thread**: 100ms manifestation cycle (configurable)
 
-**Orchestration Scalability**: Tested with 50+ simultaneous manifestations and complex frequency overlaps.
+**Orchestration Scalability**: Tested with 50+ simultaneous manifestations and complex spectral overlaps using Bark band similarity detection.
 
 ## Installation & Setup
 
 ### Dependencies
 
 ```bash
-pip install sentence-transformers python-osc faiss-cpu torch tinydb
+pip install sentence-transformers python-osc faiss-cpu torch tinydb librosa soundfile
+
+# For development with audio analysis:
+pip install -e ".[dev,audio]"
 
 # Optional enhanced text processing:
 pip install spacy
@@ -390,11 +448,11 @@ The server will:
 python -m hibikido.main_server --log-level DEBUG
 ```
 
-**Inspect orchestration**: Check console logs for orchestrator decisions:
+**Inspect Bark band orchestration**: Check console logs for orchestrator decisions:
 
 ```
-DEBUG:hibikido.orchestrator:Queued manifestation: segment_123 [1000-3000Hz]
-DEBUG:hibikido.orchestrator:Manifested: segment_123 [1000-3000Hz] (queued for 0.2s)
+DEBUG:hibikido.orchestrator:Queued manifestation: segment_123 [Bark bands sum: 2.186]
+DEBUG:hibikido.orchestrator:Manifested: segment_123 [Bark sum: 2.186] (queued for 0.2s)
 DEBUG:hibikido.orchestrator:Queue has 3 items remaining
 ```
 
