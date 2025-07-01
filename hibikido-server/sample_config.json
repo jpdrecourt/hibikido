@@ -28,9 +28,14 @@
   },
   
   "orchestrator": {
-    "_comment": "Time-frequency niche management",
-    "overlap_threshold": 0.2,
+    "_comment": "Bark band niche management",
+    "bark_similarity_threshold": 0.5,
     "time_precision": 0.1
+  },
+  
+  "audio": {
+    "_comment": "Audio processing settings",
+    "audio_directory": "../hibikido-data/audio"
   },
   
   "_examples": {
@@ -53,7 +58,7 @@
         "index_file": "../hibikido-data/industrial-textures/index/industrial-textures.index"
       },
       "orchestrator": {
-        "overlap_threshold": 0.15,
+        "bark_similarity_threshold": 0.4,
         "time_precision": 0.05
       }
     },

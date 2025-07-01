@@ -132,7 +132,7 @@ class HibikidoDatabase:
     def add_segment(self, source_path: str, segmentation_id: str,
                    start: float, end: float, description: str,
                    embedding_text: str, faiss_index: int = None,
-                   freq_low: float = None, freq_high: float = None,
+                   bark_bands: List[float] = None,
                    duration: float = None) -> bool:
         """Add a new segment referencing recording by path."""
         try:
@@ -146,10 +146,8 @@ class HibikidoDatabase:
                 "created_at": datetime.now().isoformat()
             }
 
-            if freq_low is not None:
-                segment["freq_low"] = freq_low
-            if freq_high is not None:
-                segment["freq_high"] = freq_high
+            if bark_bands is not None:
+                segment["bark_bands"] = bark_bands
             if duration is not None:
                 segment["duration"] = duration
             

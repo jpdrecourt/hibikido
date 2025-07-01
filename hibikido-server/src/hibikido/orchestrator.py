@@ -11,22 +11,23 @@ import math
 import json
 from typing import Dict, List, Any, Optional, Callable
 import logging
+from .bark_analyzer import BarkAnalyzer
 
 logger = logging.getLogger(__name__)
 
 class Orchestrator:
-    def __init__(self, overlap_threshold: float = 0.2, time_precision: float = 0.1):
+    def __init__(self, bark_similarity_threshold: float = 0.5, time_precision: float = 0.1):
         """
         Initialize orchestrator.
         
         Args:
-            overlap_threshold: Maximum allowed logarithmic frequency overlap (0.2 = 20%)
+            bark_similarity_threshold: Maximum allowed Bark band cosine similarity (0.5 = 50%)
             time_precision: Time precision in seconds (0.1 = 100ms)
         """
-        self.overlap_threshold = overlap_threshold
+        self.bark_similarity_threshold = bark_similarity_threshold
         self.time_precision = time_precision
         
-        # Active niches: list of dicts with sound_id, start_time, end_time, freq_low, freq_high
+        # Active niches: list of dicts with sound_id, start_time, end_time, bark_bands
         self.active_niches = []
         
         # Queue for manifestations: list of (manifestation_data, request_time)
@@ -35,7 +36,7 @@ class Orchestrator:
         # Callback for sending manifestations
         self.manifest_callback = None
         
-        logger.info(f"Orchestrator initialized: {overlap_threshold*100:.0f}% overlap threshold, "
+        logger.info(f"Orchestrator initialized: {bark_similarity_threshold:.1f} Bark similarity threshold, "
                    f"{time_precision*1000:.0f}ms precision")
     
     def set_manifest_callback(self, callback: Callable):
@@ -63,10 +64,9 @@ class Orchestrator:
             self.queue.append((manifestation_data, request_time))
             
             sound_id = manifestation_data.get("sound_id", "unknown")
-            freq_low = manifestation_data.get("freq_low", 200)
-            freq_high = manifestation_data.get("freq_high", 2000)
+            bark_bands = manifestation_data.get("bark_bands", [0.0] * 24)
             
-            logger.debug(f"Queued manifestation: {sound_id} [{freq_low:.0f}-{freq_high:.0f}Hz]")
+            logger.debug(f"Queued manifestation: {sound_id} [Bark bands sum: {sum(bark_bands):.3f}]")
             return True
             
         except Exception as e:
@@ -100,18 +100,17 @@ class Orchestrator:
         # Process queue in FIFO order
         for manifestation_data, request_time in self.queue:
             try:
-                # Extract frequency/duration info
+                # Extract Bark bands/duration info
                 sound_id = manifestation_data.get("sound_id", "unknown")
-                freq_low = float(manifestation_data.get("freq_low", 200))
-                freq_high = float(manifestation_data.get("freq_high", 2000))
+                bark_bands = manifestation_data.get("bark_bands", [0.0] * 24)
                 duration = float(manifestation_data.get("duration", 1.0))
                 
                 # Check for conflicts
-                conflict_end_time = self._find_conflict(freq_low, freq_high, now)
+                conflict_end_time = self._find_conflict(bark_bands, now)
                 
                 if conflict_end_time is None:
                     # No conflict - register niche and send manifestation
-                    self._register_niche(sound_id, now, now + duration, freq_low, freq_high)
+                    self._register_niche(sound_id, now, now + duration, bark_bands)
                     
                     # Send manifestation via callback
                     self.manifest_callback(
@@ -126,7 +125,7 @@ class Orchestrator:
                     )
                     
                     manifestations_sent += 1
-                    logger.debug(f"Manifested: {sound_id} [{freq_low:.0f}-{freq_high:.0f}Hz] "
+                    logger.debug(f"Manifested: {sound_id} [Bark sum: {sum(bark_bands):.3f}] "
                                f"(queued for {now - request_time:.1f}s)")
                 else:
                     # Still has conflict - keep in queue
@@ -143,9 +142,9 @@ class Orchestrator:
             logger.debug(f"Processed queue: {manifestations_sent} manifestations sent, "
                         f"{len(self.queue)} still queued")
     
-    def _find_conflict(self, freq_low: float, freq_high: float, now: float) -> Optional[float]:
+    def _find_conflict(self, bark_bands: List[float], now: float) -> Optional[float]:
         """
-        Find if frequency range conflicts with active niches.
+        Find if Bark bands conflict with active niches.
         
         Returns:
             None if no conflict, otherwise the end_time of the earliest conflicting niche
@@ -155,63 +154,23 @@ class Orchestrator:
         for niche in self.active_niches:
             # Check time overlap (sound is still active)
             if now < niche["end_time"]:
-                # Check logarithmic frequency overlap
-                if self._has_frequency_overlap(freq_low, freq_high, 
-                                             niche["freq_low"], niche["freq_high"]):
+                # Check Bark band similarity
+                similarity = BarkAnalyzer.cosine_similarity(bark_bands, niche["bark_bands"])
+                if similarity > self.bark_similarity_threshold:
                     if earliest_conflict_end is None or niche["end_time"] < earliest_conflict_end:
                         earliest_conflict_end = niche["end_time"]
         
         return earliest_conflict_end
     
-    def _has_frequency_overlap(self, f1_low: float, f1_high: float, 
-                              f2_low: float, f2_high: float) -> bool:
-        """
-        Check if two frequency ranges overlap beyond threshold (logarithmic).
-        
-        Uses logarithmic frequency space to better match human perception.
-        """
-        try:
-            # Convert to log space (base 2, so octaves)
-            log_f1_low = math.log2(max(f1_low, 1))
-            log_f1_high = math.log2(max(f1_high, 1))
-            log_f2_low = math.log2(max(f2_low, 1))
-            log_f2_high = math.log2(max(f2_high, 1))
-            
-            # Calculate ranges in log space
-            range1_size = log_f1_high - log_f1_low
-            range2_size = log_f2_high - log_f2_low
-            
-            # Find overlap region
-            overlap_start = max(log_f1_low, log_f2_low)
-            overlap_end = min(log_f1_high, log_f2_high)
-            
-            if overlap_start >= overlap_end:
-                return False  # No overlap
-            
-            overlap_size = overlap_end - overlap_start
-            
-            # Check if overlap exceeds threshold relative to smaller range
-            smaller_range = min(range1_size, range2_size)
-            if smaller_range <= 0:
-                return False
-            
-            overlap_ratio = overlap_size / smaller_range
-            
-            return overlap_ratio > self.overlap_threshold
-            
-        except (ValueError, ZeroDivisionError):
-            # Handle edge cases
-            return False
     
     def _register_niche(self, sound_id: str, start_time: float, end_time: float,
-                       freq_low: float, freq_high: float):
+                       bark_bands: List[float]):
         """Register a new active niche."""
         niche = {
             "sound_id": sound_id,
             "start_time": start_time,
             "end_time": end_time,
-            "freq_low": freq_low,
-            "freq_high": freq_high
+            "bark_bands": bark_bands
         }
         self.active_niches.append(niche)
     
@@ -230,7 +189,7 @@ class Orchestrator:
         return {
             "active_niches": len(self.active_niches),
             "queued_requests": len(self.queue),
-            "overlap_threshold": self.overlap_threshold,
+            "bark_similarity_threshold": self.bark_similarity_threshold,
             "time_precision": self.time_precision
         }
     

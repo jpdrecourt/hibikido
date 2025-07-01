@@ -8,7 +8,9 @@ OSC command implementations.
 
 import json
 import logging
+import os
 from typing import Dict, Any
+from .bark_analyzer import analyze_audio_file
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +63,7 @@ class CommandHandlers:
                 document = result["document"]
                 
                 # Extract metadata for orchestrator
-                freq_low = document.get("freq_low", 200)
-                freq_high = document.get("freq_high", 2000)
+                bark_bands = document.get("bark_bands", [0.0] * 24)  # Default to silence
                 duration = document.get("duration", 1.0)
                 sound_id = str(getattr(document, 'doc_id', document.get('source_path', 'unknown')))
                 
@@ -79,8 +80,7 @@ class CommandHandlers:
                     "end": float(document.get("end", 1.0)),
                     "parameters": "[]",  # Empty for segments
                     "sound_id": sound_id,
-                    "freq_low": freq_low,
-                    "freq_high": freq_high,
+                    "bark_bands": bark_bands,
                     "duration": duration
                 }
                 
@@ -129,84 +129,85 @@ class CommandHandlers:
             return "untitled"
     
     def handle_add_recording(self, unused_addr: str, *args):
-        """Handle add recording requests using key/value metadata pairs."""
+        """Handle add recording requests with simplified syntax: /add_recording [file_path] "[description]"."""
         try:
-            if len(args) == 0:
-                self.osc_handler.send_error("add_recording requires audio file path")
+            if len(args) < 2:
+                self.osc_handler.send_error("add_recording requires file path and description")
                 return
 
-            path = str(args[0]).strip()
-            if not path:
-                self.osc_handler.send_error("add_recording requires audio file path")
-                return
-
-            metadata: Dict[str, Any] = {}
-            if len(args) > 1:
-                if (len(args) - 1) % 2 != 0:
-                    self.osc_handler.send_error("metadata must be name/value pairs")
-                    return
-                for i in range(1, len(args), 2):
-                    key = str(args[i])
-                    value = str(args[i + 1]) if i + 1 < len(args) else ""
-                    # Try to convert numeric values
-                    try:
-                        if '.' in value:
-                            value = float(value)
-                        else:
-                            value = int(value)
-                    except ValueError:
-                        pass  # Keep as string
-                    metadata[key] = value
+            relative_path = str(args[0]).strip()
+            description = str(args[1]).strip()
             
-            # Add recording to database with all metadata
+            if not relative_path:
+                self.osc_handler.send_error("add_recording requires file path")
+                return
+            if not description:
+                self.osc_handler.send_error("add_recording requires description")
+                return
+            
+            # Resolve audio path from config
+            audio_dir = self.config.get('audio_directory', '../hibikido-data/audio')
+            full_audio_path = os.path.join(audio_dir, relative_path)
+            
+            # Check if file exists
+            if not os.path.exists(full_audio_path):
+                self.osc_handler.send_error(f"audio file not found: {full_audio_path}")
+                return
+            
+            # Analyze audio file for duration and Bark bands
+            try:
+                bark_bands, duration = analyze_audio_file(full_audio_path)
+                logger.info(f"Audio analysis: {duration:.2f}s, Bark bands sum: {sum(bark_bands):.3f}")
+            except Exception as e:
+                self.osc_handler.send_error(f"audio analysis failed: {e}")
+                return
+            
+            # Prepare metadata
+            metadata = {
+                'description': description,
+                'duration': duration
+            }
+            
+            # Add recording to database with metadata
             success = self.db_manager.add_recording(
-                path=path,
+                path=relative_path,  # Store relative path
                 metadata=metadata
             )
             
             if not success:
-                self.osc_handler.send_error(f"recording already exists or failed to add: {path}")
+                self.osc_handler.send_error(f"recording already exists or failed to add: {relative_path}")
                 return
-            
-            # Get the description for the segment
-            description = metadata.get('description', f"Recording: {path}")
             
             # Auto-create full-length segment with metadata
             segment_description = f"Full recording: {description}"
             
             segment_embedding_text = self.text_processor.create_segment_embedding_text(
                 segment={'description': segment_description},
-                recording={'description': description, 'path': path, **metadata},
+                recording={'description': description, 'path': relative_path, **metadata},
                 segmentation={'description': 'Auto-generated full recording segment'}
             )
             
             # Add embedding
             faiss_id = self.embedding_manager.add_embedding(segment_embedding_text)
             
-            # Use frequency and duration from recording metadata for auto-segment
-            freq_low = metadata.get('freq_low', 20.0)
-            freq_high = metadata.get('freq_high', 20000.0)
-            duration = metadata.get('duration', 0.0)
-            
-            # Add auto-segment with frequency/duration metadata
+            # Add auto-segment with Bark bands and duration
             segment_success = self.db_manager.add_segment(
-                source_path=path,
+                source_path=relative_path,  # Store relative path
                 segmentation_id="auto_full",
                 start=0.0,
                 end=1.0,
                 description=segment_description,
                 embedding_text=segment_embedding_text,
                 faiss_index=faiss_id,
-                freq_low=float(freq_low),
-                freq_high=float(freq_high),
-                duration=float(duration)
+                bark_bands=bark_bands,
+                duration=duration
             )
             
             if segment_success:
-                self.osc_handler.send_confirm(f"added recording: {path} with auto-segment")
-                logger.info(f"Added recording: {path} with auto-segment at FAISS {faiss_id}")
+                self.osc_handler.send_confirm(f"added recording: {relative_path} with auto-segment")
+                logger.info(f"Added recording: {relative_path} with auto-segment at FAISS {faiss_id}")
             else:
-                self.osc_handler.send_confirm(f"added recording: {path} (segment creation failed)")
+                self.osc_handler.send_confirm(f"added recording: {relative_path} (segment creation failed)")
                 
         except Exception as e:
             error_msg = f"add_recording failed: {e}"
@@ -302,8 +303,6 @@ class CommandHandlers:
             segmentation_id = metadata.get('segmentation_id', 'manual')
             start = float(metadata.get('start', 0.0))
             end = float(metadata.get('end', 1.0))
-            freq_low = float(metadata.get('freq_low', 20.0))
-            freq_high = float(metadata.get('freq_high', 20000.0))
             duration = float(metadata.get('duration', 0.0))
 
             if not source_path:
@@ -337,8 +336,6 @@ class CommandHandlers:
                 description=description,
                 embedding_text=embedding_text,
                 faiss_index=faiss_id,
-                freq_low=freq_low,
-                freq_high=freq_high,
                 duration=duration
             )
             

@@ -34,8 +34,11 @@ def get_default_config() -> Dict[str, Any]:
             'min_score': 0.3
         },
         'orchestrator': {
-            'overlap_threshold': 0.2,  # 20%
+            'bark_similarity_threshold': 0.5,  # 50%
             'time_precision': 0.1      # 100ms
+        },
+        'audio': {
+            'audio_directory': '../hibikido-data/audio'
         }
     }
 

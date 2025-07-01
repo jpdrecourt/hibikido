@@ -62,7 +62,7 @@ class ComponentFactory:
         )
         
         orchestrator = Orchestrator(
-            overlap_threshold=self.config['orchestrator']['overlap_threshold'],
+            bark_similarity_threshold=self.config['orchestrator']['bark_similarity_threshold'],
             time_precision=self.config['orchestrator']['time_precision']
         )
         
