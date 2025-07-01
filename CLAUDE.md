@@ -22,16 +22,15 @@ hibikido-server --config sample_config.json
 
 ### Testing
 ```bash
-# Run all tests
-pytest
+# Run smoke tests (simplified testing approach)
+cd hibikido-server
+python tests/test_smoke.py
 
-# Run specific test files
-pytest tests/test_orchestrator.py -v
-pytest tests/test_invocation_integration.py -v
+# Or with pytest
+pytest tests/test_smoke.py -v
 
-# Run with markers
-pytest -m "not slow"  # Skip slow tests
-pytest -m orchestrator  # Only orchestrator tests
+# Manual testing guide
+# See tests/manual_testing.md for creative workflow validation
 ```
 
 ### Code Quality
@@ -140,15 +139,13 @@ Configuration via `config.json` (see `sample_config.json`):
 
 ### Testing Strategy
 
-The codebase uses pytest with specific markers:
-- `slow`: Long-running tests (skip with `-m "not slow"`)
-- `integration`: End-to-end tests
-- `orchestrator`: Component-specific tests
+Simplified testing approach for artistic project:
+- **Smoke tests** (`test_smoke.py`): Essential "does it work?" validation
+- **Manual testing** (`manual_testing.md`): Creative workflow guide
+- **Philosophy**: Focus on "does it inspire creativity?" over exhaustive coverage
 
-Key test files:
-- `test_orchestrator.py`: Queue and niche management
-- `test_invocation_integration.py`: Full workflow testing
-- `test_hibikido_database.py`: MongoDB operations
+Manual testing during creative sessions is prioritized over automated tests.
+For personal artistic tools, functional validation matters more than test coverage.
 
 ### Development Patterns
 
@@ -156,6 +153,8 @@ Key test files:
 
 **Debugging Orchestration**: Enable DEBUG logging to see niche conflicts and queue processing.
 
-**Database Schema Changes**: Update both `HibikidoDatabase` methods in `tinydb_manager.py` and corresponding test fixtures.
+**Database Schema Changes**: Update `HibikidoDatabase` methods in `tinydb_manager.py`. TinyDB automatically handles schema evolution.
+
+**Launch Workflow**: Max/MSP runs batch scripts from `hibikido-interface/` which cd to `hibikido-server/` and use `config.json` from there.
 
 The system implements an "invocation protocol" - sounds manifest when "the cosmos permits" rather than on demand, creating an intentionally non-deterministic but harmonically-aware audio experience.
