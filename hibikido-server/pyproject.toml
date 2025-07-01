@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "hibikido"
-version = "0.1.2"
+version = "0.2.3"
 description = "Semantic search engine for musical sounds and effects with perceptual Bark band orchestration"
 readme = "README.md"
 authors = [
