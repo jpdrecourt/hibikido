@@ -150,8 +150,8 @@ class EmbeddingManager:
                 # Convert numpy.int64 to regular Python int for MongoDB
                 faiss_idx = int(faiss_idx)
                 
-                # Look for segment with this FAISS_index
-                segment = db_manager.segments.find_one({"FAISS_index": faiss_idx})
+                # Look for segment with this FAISS_index (TinyDB version)
+                segment = db_manager.get_segment_by_faiss_id(faiss_idx)
                 if segment:
                     results.append({
                         "collection": "segments",
@@ -160,8 +160,8 @@ class EmbeddingManager:
                     })
                     continue
                 
-                # Look for preset with this FAISS_index (now in separate collection)
-                preset = db_manager.presets.find_one({"FAISS_index": faiss_idx})
+                # Look for preset with this FAISS_index (TinyDB version)
+                preset = db_manager.get_preset_by_faiss_id(faiss_idx)
                 if preset:
                     results.append({
                         "collection": "presets", 
@@ -208,7 +208,7 @@ class EmbeddingManager:
             
             # Process segments with hierarchical context
             if text_processor:
-                segments = db_manager.segments.find({})
+                segments = db_manager.segments_db.all()
                 for segment in segments:
                     try:
                         stats["segments_processed"] += 1
@@ -226,23 +226,22 @@ class EmbeddingManager:
                             faiss_id = self.add_embedding(embedding_text)
                             
                             if faiss_id is not None:
-                                # Update segment with new FAISS_index and embedding_text
-                                db_manager.segments.update_one(
-                                    {"_id": segment["_id"]},
-                                    {"$set": {
-                                        "FAISS_index": faiss_id,
-                                        "embedding_text": embedding_text
-                                    }}
+                                # Update segment with new FAISS_index and embedding_text (TinyDB version)
+                                from tinydb import Query
+                                Q = Query()
+                                db_manager.segments_db.update(
+                                    {"FAISS_index": faiss_id, "embedding_text": embedding_text},
+                                    doc_ids=[segment.doc_id]
                                 )
                                 stats["segments_added"] += 1
                     
                     except Exception as e:
                         stats["errors"] += 1
-                        logger.error(f"Failed to process segment {segment.get('_id', 'unknown')}: {e}")
+                        logger.error(f"Failed to process segment {segment.get('source_path', 'unknown')}: {e}")
             
             else:
                 # Fallback to existing embedding_text
-                segments = db_manager.segments.find({})
+                segments = db_manager.segments_db.all()
                 for segment in segments:
                     try:
                         stats["segments_processed"] += 1
@@ -252,18 +251,18 @@ class EmbeddingManager:
                             faiss_id = self.add_embedding(embedding_text)
                             
                             if faiss_id is not None:
-                                db_manager.segments.update_one(
-                                    {"_id": segment["_id"]},
-                                    {"$set": {"FAISS_index": faiss_id}}
+                                db_manager.segments_db.update(
+                                    {"FAISS_index": faiss_id},
+                                    doc_ids=[segment.doc_id]
                                 )
                                 stats["segments_added"] += 1
                     
                     except Exception as e:
                         stats["errors"] += 1
-                        logger.error(f"Failed to process segment {segment.get('_id', 'unknown')}: {e}")
+                        logger.error(f"Failed to process segment {segment.get('source_path', 'unknown')}: {e}")
             
             # Process presets with hierarchical context (now separate collection)
-            presets = db_manager.presets.find({})
+            presets = db_manager.presets_db.all()
             for preset in presets:
                 try:
                     stats["presets_processed"] += 1
@@ -287,15 +286,15 @@ class EmbeddingManager:
                             if text_processor:
                                 update_data["embedding_text"] = embedding_text
                             
-                            db_manager.presets.update_one(
-                                {"_id": preset["_id"]},
-                                {"$set": update_data}
+                            db_manager.presets_db.update(
+                                update_data,
+                                doc_ids=[preset.doc_id]
                             )
                             stats["presets_added"] += 1
                 
                 except Exception as e:
                     stats["errors"] += 1
-                    logger.error(f"Failed to process preset {preset.get('_id', 'unknown')}: {e}")
+                    logger.error(f"Failed to process preset {preset.get('effect_path', 'unknown')}: {e}")
             
             logger.info(f"Index rebuild complete: {stats}")
             return stats
