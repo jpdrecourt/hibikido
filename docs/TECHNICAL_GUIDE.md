@@ -1,0 +1,403 @@
+# Hibikidō Technical Guide
+
+Complete technical reference for the semantic audio search system with real-time orchestration.
+
+## System Architecture
+
+Hibikidō implements neural semantic search over a hierarchical audio database with real-time time-frequency niche management. The core loop: natural language → embedding vector → similarity search → queue all results → orchestrator evaluation → OSC manifestation when conditions allow.
+
+```mermaid
+graph TD
+    A[OSC Invocation] --> B[Semantic Search]
+    B --> C[TinyDB Results]
+    C --> D[Queue ALL Results]
+    D --> E[Chōwasha<br/>Orchestrator]
+    E --> F{Frequency<br/>Conflict?}
+    F -->|No Conflict| G[OSC /manifest<br/>Immediate]
+    F -->|Conflict| H[FIFO Queue<br/>Auto-retry]
+    H --> I[Background Check<br/>Every 100ms]
+    I --> J{Niche Free?}
+    J -->|Yes| G
+    J -->|No| H
+
+    style A fill:#e1f5fe,stroke:#01579b,color:#000
+    style B fill:#f3e5f5,stroke:#4a148c,color:#000
+    style C fill:#e0f2f1,stroke:#2e7d32,color:#000
+    style D fill:#fff3e0,stroke:#e65100,color:#000
+    style E fill:#fff3e0,stroke:#e65100,color:#000
+    style F fill:#fff3e0,stroke:#e65100,color:#000
+    style G fill:#e1f5fe,stroke:#01579b,color:#000
+    style H fill:#fce4ec,stroke:#880e4f,color:#000
+    style I fill:#fce4ec,stroke:#880e4f,color:#000
+    style J fill:#fce4ec,stroke:#880e4f,color:#000
+```
+
+### Communication Flow
+
+The orchestrator manages time-frequency niches transparently. OSC clients receive `/manifest` messages when sounds find their moment.
+
+```mermaid
+sequenceDiagram
+    participant Client as OSC Client
+    participant Server as Hibikidō Server
+    participant Queue as FIFO Queue
+    participant Orchestrator as Orchestrator
+
+    Client->>Server: /invoke "glittery texture"
+    Server->>Server: Semantic search finds matches
+
+    loop For ALL search results
+        Server->>Queue: Queue manifestation data
+        Note over Queue: ALL results queued
+    end
+
+    Server->>Client: /confirm "N resonances queued"
+
+    Note over Orchestrator: Background thread every 100ms
+    loop Auto-process FIFO queue
+        Queue->>Orchestrator: Next queued manifestation
+
+        alt Niche is free
+            Orchestrator->>Client: /manifest [sound data]
+            Note over Client: Sound manifests now
+        else Niche occupied
+            Orchestrator->>Queue: Return to queue
+            Note over Queue: Wait for harmony
+        end
+    end
+```
+
+### Component Architecture
+
+```mermaid
+graph LR
+    subgraph "Core"
+        A[Server<br/>OSC Handler]
+        B[Orchestrator]
+        C[FIFO Queue]
+    end
+
+    subgraph "Recognition"
+        D[Semantic<br/>Processing]
+        E[Vector<br/>Search]
+    end
+
+    subgraph "Memory"
+        F[TinyDB<br/>Documents]
+        G[FAISS<br/>Index]
+    end
+
+    A --> D
+    D --> E
+    E --> F
+    E --> G
+    E --> C
+    C --> B
+    B --> A
+
+    style A fill:#e1f5fe,stroke:#01579b,color:#000
+    style B fill:#fff3e0,stroke:#e65100,color:#000
+    style C fill:#fce4ec,stroke:#880e4f,color:#000
+    style D fill:#f3e5f5,stroke:#4a148c,color:#000
+    style E fill:#ffebee,stroke:#c62828,color:#000
+    style F fill:#e0f2f1,stroke:#2e7d32,color:#000
+    style G fill:#ffebee,stroke:#c62828,color:#000
+```
+
+## OSC Protocol
+
+### Core Commands
+
+Send to the server (default: `127.0.0.1:9000`):
+
+```
+/invoke "your description here"
+→ Multiple /manifest messages as sounds become available (no completion signal)
+
+/add_recording "sounds/wind/forest_01.wav" "description" "morning wind through oak trees"
+→ Add new recording and auto-create full-length segment (0.0-1.0)
+
+/add_recording "sounds/wind/forest_01.wav" "description" "morning wind through oak trees" "duration" 45.2 "freq_low" 200 "freq_high" 8000
+→ Add recording with metadata - auto-segment inherits frequency range and duration for orchestration
+
+/add_effect "effects/reverb/cathedral.dll" '{"description":"gothic cathedral reverb"}'
+→ Add new effect and auto-create default preset
+
+/add_segment "sounds/wind/forest_01.wav" "description" "wind gusts" "start" 0.1 "end" 0.6 "segmentation_id" "manual" "freq_low" 200 "freq_high" 2000 "duration" 3.5
+→ Add new segment with timing, frequency range, and duration metadata for orchestration
+
+/add_preset "warm cathedral ambience" '{"effect_path":"effects/reverb/cathedral.dll", "parameters":[0.8, 0.3, 0.9]}'
+→ Add new effect preset with parameters
+
+/rebuild_index
+→ Regenerate all embeddings from database (use after bulk changes)
+
+/stats
+→ Database and orchestrator statistics
+
+/stop
+→ Graceful shutdown
+```
+
+### Response Messages
+
+The server responds on `127.0.0.1:9001`:
+
+**Sound Manifestations** (`/manifest`):
+
+Each manifestation is sent as a separate message with 8 fields:
+
+- `index`: Manifestation sequence (0, 1, 2...)
+- `collection`: "segments" or "presets"
+- `score`: Resonance strength (0.0-1.0, higher = stronger)
+- `path`: File path for the audio/effect
+- `description`: Human-readable description from embedding text
+- `start`: Start position (0.0-1.0, normalized, 0.0 for presets)
+- `end`: End position (0.0-1.0, normalized, 0.0 for presets)
+- `parameters`: Effect parameters as JSON string (presets only, "[]" for segments)
+
+**Status Messages**:
+
+- `/confirm "message"` - Acknowledgments
+- `/error "message"` - When operations fail
+- `/stats_result [recordings, segments, effects, presets, embeddings, active_niches, queued]` - Database and orchestrator statistics
+
+Note: Manifestations arrive over time as the orchestrator permits, following harmonic law rather than immediate demand.
+
+## Data Architecture
+
+### Database Schema
+
+Hibikidō organizes sound through hierarchical relationships using TinyDB:
+
+- **Recordings**: Source audio files with metadata
+- **Segments**: Timestamped slices within recordings with frequency/duration metadata
+- **Effects**: Audio processing tools with semantic presets  
+- **Presets**: Effect configurations with parameters
+- **Performances**: Session logs of invocations over time
+
+Each segment and effect preset exists as a point in semantic space, findable through language that describes its essence rather than its filename.
+
+### Portable Data Structure
+
+```
+hibikido-data/
+├── database/                   # TinyDB JSON files
+│   ├── recordings.json        # Audio file metadata
+│   ├── segments.json          # Timestamped segments  
+│   ├── effects.json           # Effect definitions
+│   ├── presets.json           # Effect presets
+│   ├── performances.json      # Session logs
+│   └── segmentations.json     # Batch processing
+├── index/                     # FAISS indices
+│   └── hibikido.index         # Main semantic index
+└── audio/                     # Audio files (optional)
+```
+
+**Key Benefits:**
+- No database installation required (uses TinyDB)
+- All data consolidated in one directory
+- Easy backup/migration (copy hibikido-data/)
+- Self-contained and portable
+
+## Core Components
+
+### orchestrator.py - Harmonic Management
+
+The orchestrator manages time-frequency niches, serving as guardian and mediator between human intention and harmonic law. Through logarithmic frequency analysis and temporal wisdom, it creates the harmonic spacing that prevents conflicts while allowing maximum sonic richness.
+
+**Core Concepts**:
+
+- **Niches**: Active sound registrations with `{sound_id, start_time, end_time, freq_low, freq_high}`
+- **Logarithmic Overlap**: Uses `log2()` for octave-based frequency analysis matching human hearing
+- **FIFO Queue**: All search results await their turn in first-in-first-out order
+- **Auto-Manifestation**: Background thread automatically manifests queued sounds when niches become available
+
+**Key Methods**:
+
+- `queue_manifestation(manifestation_data)`: Queue all search results
+- `update()`: Periodic cleanup and queue processing (called every 100ms)
+- `_has_frequency_overlap(f1_low, f1_high, f2_low, f2_high)`: Logarithmic overlap detection
+- `_process_queue()`: Main manifestation logic - sends `/manifest` when niches free
+
+**Configuration**:
+
+- `overlap_threshold`: 0.2 (20% logarithmic overlap allowed)
+- `time_precision`: 0.1 (100ms manifestation cycle)
+
+### main_server.py - Central Recognition
+
+Central command implements the queue paradigm:
+
+**Invocation Flow in `_handle_invoke()`**:
+
+1. Perform semantic search
+2. Filter to segments only (MVP requirement)
+3. Queue all results through orchestrator
+4. Send confirmation of queued resonances
+5. Orchestrator sends `/manifest` messages when harmony allows
+
+**Key Methods**:
+
+- `_handle_invoke()`: queues all results
+- Background thread runs `orchestrator.update()` every 100ms
+- Stats include orchestrator metrics
+- All manifestation sending delegated to orchestrator
+
+### embedding_manager.py - Neural Recognition
+
+Uses sentence-transformers for semantic search with FAISS index for vector similarity. Default model: all-MiniLM-L6-v2.
+
+Orchestration happens after semantic search.
+
+### tinydb_manager.py - Hierarchical Storage
+
+**Segment Fields for Orchestration**:
+
+- `freq_low`: Frequency range lower bound (Hz)
+- `freq_high`: Frequency range upper bound (Hz)
+- `duration`: Sound duration (seconds)
+
+These fields enable the orchestrator to make harmonic decisions.
+
+## Development Patterns
+
+### Adding Orchestration to Existing Segments
+
+Update existing segments with frequency metadata:
+
+```python
+# Update segments without frequency data
+from tinydb import TinyDB, Query
+db = TinyDB('hibikido-data/database/segments.json')
+Segment = Query()
+
+db.update({
+    'freq_low': 200,    # Default low frequency
+    'freq_high': 2000,  # Default high frequency  
+    'duration': 1.0,    # Default duration
+}, ~Segment.freq_low.exists())
+```
+
+### Configuring Orchestration
+
+Modify orchestrator settings in `config.json`:
+
+```json
+{
+  "orchestrator": {
+    "overlap_threshold": 0.15, // 15% overlap threshold
+    "time_precision": 0.05     // 50ms manifestation cycle
+  }
+}
+```
+
+### Debugging Orchestration
+
+**Monitor niche management**:
+
+```bash
+# Enable orchestrator debug logging
+python -m hibikido.main_server --log-level DEBUG
+
+# Watch for these log messages:
+# "Queued manifestation: sound_id [freq_low-freq_high Hz]"
+# "Manifested: sound_id [freq_low-freq_high Hz] (queued for Xs)"
+# "Queue has N items remaining"
+```
+
+**Check orchestrator state via OSC**:
+
+```bash
+# Send stats request to see active niches and queue
+echo "/stats" | oscsend localhost 9000
+```
+
+## Configuration
+
+Override defaults with `config.json`:
+
+```json
+{
+  "database": {
+    "data_dir": "../hibikido-data/database"
+  },
+  "embedding": {
+    "model_name": "all-MiniLM-L6-v2",
+    "index_file": "../hibikido-data/index/hibikido.index"
+  },
+  "osc": {
+    "listen_ip": "127.0.0.1",
+    "listen_port": 9000,
+    "send_ip": "127.0.0.1",
+    "send_port": 9001
+  },
+  "search": {
+    "top_k": 10,
+    "min_score": 0.3
+  },
+  "orchestrator": {
+    "overlap_threshold": 0.2,
+    "time_precision": 0.1
+  }
+}
+```
+
+## Performance Characteristics
+
+- **Queue Latency**: ~0.1-1ms per manifestation queued
+- **Manifestation Latency**: 100ms average (depends on conflicts)
+- **Memory Overhead**: ~100 bytes per queued manifestation
+- **Queue Processing**: Up to 5 manifestations per 100ms cycle
+- **Frequency Analysis**: Logarithmic calculation optimized for real-time use
+- **Background Thread**: 100ms manifestation cycle (configurable)
+
+**Orchestration Scalability**: Tested with 50+ simultaneous manifestations and complex frequency overlaps.
+
+## Installation & Setup
+
+### Dependencies
+
+```bash
+pip install sentence-transformers python-osc faiss-cpu torch tinydb
+
+# Optional enhanced text processing:
+pip install spacy
+python -m spacy download en_core_web_sm
+```
+
+### Launch Sequence
+
+```bash
+python -m hibikido.main_server [--config config.json] [--log-level DEBUG]
+```
+
+The server will:
+
+1. Connect to TinyDB and initialize collections
+2. Load the sentence transformer model
+3. Initialize or load the FAISS index
+4. Initialize orchestrator with time-frequency niche management
+5. Start background thread for manifestation cycles
+6. Start OSC server and register handlers
+7. Send ready signal via OSC (`/confirm "hibikido_server_ready"`)
+
+## Debugging
+
+**Enable verbose logging**:
+
+```bash
+python -m hibikido.main_server --log-level DEBUG
+```
+
+**Inspect orchestration**: Check console logs for orchestrator decisions:
+
+```
+DEBUG:hibikido.orchestrator:Queued manifestation: segment_123 [1000-3000Hz]
+DEBUG:hibikido.orchestrator:Manifested: segment_123 [1000-3000Hz] (queued for 0.2s)
+DEBUG:hibikido.orchestrator:Queue has 3 items remaining
+```
+
+**Monitor niche state**: Use `/stats` OSC command to see active niches and queue length.
+
+**Test invocation flow**: Send `/invoke "your description"` and watch manifestations emerge over time.
