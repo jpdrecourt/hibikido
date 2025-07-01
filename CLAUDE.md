@@ -57,7 +57,7 @@ pip install -e ".[audio]"
 
 ## Architecture Overview
 
-Hibikidō is a semantic audio search system with real-time orchestration. The core concept: natural language descriptions invoke audio segments that manifest when frequency space allows.
+Hibikidō is a semantic audio search system with real-time orchestration using Bark band analysis. The core concept: natural language descriptions invoke audio segments that manifest when perceptual spectral space allows.
 
 ### Core Components
 
@@ -67,10 +67,16 @@ Hibikidō is a semantic audio search system with real-time orchestration. The co
 - Background thread runs orchestrator updates every 100ms
 
 **Orchestrator** (`orchestrator.py`):
-- Manages time-frequency "niches" to prevent harmonic conflicts
+- Manages Bark band "niches" to prevent spectral conflicts
 - FIFO queue for all search results - no immediate manifestations
-- Logarithmic frequency overlap detection (default 20% threshold)
+- Cosine similarity conflict detection using 24 Bark frequency bands (default 0.5 threshold)
 - Sends `/manifest` OSC messages when sounds can play
+
+**Bark Analyzer** (`bark_analyzer.py`):
+- Perceptual audio analysis using 24 critical frequency bands (Bark scale)
+- Pre-computed spectral fingerprints for zero-latency orchestration
+- Cosine similarity comparison between normalized energy vectors
+- Automatic duration calculation from audio files
 
 **TinyDB Manager** (`tinydb_manager.py`):
 - JSON file collections: recordings, segments, effects, presets, performances
@@ -122,8 +128,8 @@ hibikido-project/
 
 ```
 /invoke "ethereal forest breathing"  # Search and queue manifestations
-/add_recording "path" "description"  # Add audio file
-/add_segment "path" "desc" "start" 0.1 "end" 0.6  # Add timed segment
+/add_recording "forest.wav" "description"  # Simplified: auto-analyzes Bark bands and duration
+/add_segment "path" "desc" "start" 0.1 "end" 0.6  # Add timed segment (auto Bark analysis)
 /stats  # Database and orchestrator status
 /rebuild_index  # Regenerate embeddings
 ```
@@ -135,7 +141,8 @@ Configuration via `config.json` (see `sample_config.json`):
 - FAISS index file location
 - OSC ports and embedding model
 - Search parameters (top_k, min_score)
-- Orchestrator settings (overlap_threshold, time_precision)
+- Orchestrator settings (bark_similarity_threshold, time_precision)
+- Audio directory for relative path resolution
 
 ### Testing Strategy
 
@@ -157,4 +164,4 @@ For personal artistic tools, functional validation matters more than test covera
 
 **Launch Workflow**: Max/MSP runs batch scripts from `hibikido-interface/` which cd to `hibikido-server/` and use `config.json` from there.
 
-The system implements an "invocation protocol" - sounds manifest when "the cosmos permits" rather than on demand, creating an intentionally non-deterministic but harmonically-aware audio experience.
+The system implements an "invocation protocol" - sounds manifest when "the cosmos permits" rather than on demand, creating an intentionally non-deterministic but perceptually-aware audio experience using Bark band analysis for conflict detection.
