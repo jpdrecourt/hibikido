@@ -133,6 +133,8 @@ class HibikidoDatabase:
                    start: float, end: float, description: str,
                    embedding_text: str, faiss_index: int = None,
                    bark_bands: List[float] = None,
+                   bark_bands_raw: List[float] = None,
+                   bark_norm: float = None,
                    duration: float = None) -> bool:
         """Add a new segment referencing recording by path."""
         try:
@@ -148,6 +150,10 @@ class HibikidoDatabase:
 
             if bark_bands is not None:
                 segment["bark_bands"] = bark_bands
+            if bark_bands_raw is not None:
+                segment["bark_bands_raw"] = bark_bands_raw
+            if bark_norm is not None:
+                segment["bark_norm"] = bark_norm
             if duration is not None:
                 segment["duration"] = duration
             
