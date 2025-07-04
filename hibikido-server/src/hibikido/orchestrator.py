@@ -27,7 +27,7 @@ class Orchestrator:
         self.bark_similarity_threshold = bark_similarity_threshold
         self.time_precision = time_precision
         
-        # Active niches: list of dicts with sound_id, start_time, end_time, bark_bands
+        # Active niches: list of dicts with manifestation_id, start_time, end_time, bark_bands
         self.active_niches = []
         
         # Queue for manifestations: list of (manifestation_data, request_time)
@@ -109,12 +109,13 @@ class Orchestrator:
                 conflict_end_time = self._find_conflict(bark_bands, now)
                 
                 if conflict_end_time is None:
-                    # No conflict - register niche and send manifestation
-                    self._register_niche(sound_id, now, now + duration, bark_bands)
+                    # No conflict - generate unique manifestation ID and register niche
+                    manifestation_id = f"{manifestation_data['index']}_{int(now * 1000)}"
+                    self._register_niche(manifestation_id, now, now + duration, bark_bands)
                     
                     # Send manifestation via callback
                     self.manifest_callback(
-                        manifestation_data["index"],
+                        manifestation_id,
                         manifestation_data["collection"],
                         manifestation_data["score"],
                         manifestation_data["path"],
@@ -125,7 +126,7 @@ class Orchestrator:
                     )
                     
                     manifestations_sent += 1
-                    logger.debug(f"Manifested: {sound_id} [Bark sum: {sum(bark_bands):.3f}] "
+                    logger.debug(f"Manifested: {manifestation_id} [Bark sum: {sum(bark_bands):.3f}] "
                                f"(queued for {now - request_time:.1f}s)")
                 else:
                     # Still has conflict - keep in queue
@@ -163,26 +164,34 @@ class Orchestrator:
         return earliest_conflict_end
     
     
-    def _register_niche(self, sound_id: str, start_time: float, end_time: float,
+    def _register_niche(self, manifestation_id: str, start_time: float, end_time: float,
                        bark_bands: List[float]):
         """Register a new active niche."""
         niche = {
-            "sound_id": sound_id,
+            "manifestation_id": manifestation_id,
             "start_time": start_time,
             "end_time": end_time,
             "bark_bands": bark_bands
         }
         self.active_niches.append(niche)
     
-    def _cleanup_expired(self):
-        """Remove expired niches."""
-        now = time.time()
-        
+    def free_manifestation(self, manifestation_id: str) -> bool:
+        """Manually free a manifestation by ID."""
         before_count = len(self.active_niches)
-        self.active_niches = [n for n in self.active_niches if n["end_time"] > now]
+        self.active_niches = [n for n in self.active_niches if n["manifestation_id"] != manifestation_id]
         
-        if len(self.active_niches) < before_count:
-            logger.debug(f"Cleaned up {before_count - len(self.active_niches)} expired niches")
+        freed = len(self.active_niches) < before_count
+        if freed:
+            logger.debug(f"Freed manifestation: {manifestation_id}")
+        else:
+            logger.warning(f"Manifestation not found for freeing: {manifestation_id}")
+        return freed
+    
+    def _cleanup_expired(self):
+        """Remove expired niches (legacy - now niches are freed manually)."""
+        # Keep this method for backward compatibility but it's no longer used
+        # since niches are freed manually via /free command
+        pass
     
     def get_stats(self) -> Dict[str, Any]:
         """Get orchestrator statistics."""

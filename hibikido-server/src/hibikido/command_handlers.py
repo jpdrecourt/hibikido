@@ -470,6 +470,33 @@ class CommandHandlers:
             logger.error(error_msg)
             self.osc_handler.send_error(error_msg)
             
+    def handle_free(self, unused_addr: str, *args):
+        """Handle free manifestation requests."""
+        try:
+            if len(args) < 1:
+                self.osc_handler.send_error("free requires manifestation_id")
+                return
+            
+            manifestation_id = str(args[0]).strip()
+            
+            if not manifestation_id:
+                self.osc_handler.send_error("free requires manifestation_id")
+                return
+            
+            # Free the manifestation in orchestrator
+            freed = self.orchestrator.free_manifestation(manifestation_id)
+            
+            if freed:
+                self.osc_handler.send_confirm(f"freed: {manifestation_id}")
+                logger.info(f"Freed manifestation: {manifestation_id}")
+            else:
+                self.osc_handler.send_error(f"manifestation not found: {manifestation_id}")
+                
+        except Exception as e:
+            error_msg = f"free failed: {e}"
+            logger.error(error_msg)
+            self.osc_handler.send_error(error_msg)
+    
     def handle_stop(self, unused_addr: str, *args):
         """Handle stop requests."""
         logger.info("Received stop command")

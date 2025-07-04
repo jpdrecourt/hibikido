@@ -37,6 +37,7 @@ class OSCHandler:
             'add_preset': '/add_preset',
             'rebuild_index': '/rebuild_index',
             'stats': '/stats',
+            'free': '/free',
             'stop': '/stop',
             
             # Output addresses
@@ -88,15 +89,15 @@ class OSCHandler:
             logger.error(f"Hibikidō OSC: Failed to start server: {e}")
             return None
     
-    def send_manifest(self, index: int, collection: str, score: float, 
+    def send_manifest(self, manifestation_id: str, collection: str, score: float, 
                      path: str, description: str, start: float, end: float, 
                      parameters: str = "[]"):
         """Send manifestation message (replaces send_result)."""
         try:
             self.client.send_message(self.addresses['manifest'], [
-                index, collection, score, path, description, start, end, parameters
+                manifestation_id, collection, score, path, description, start, end, parameters
             ])
-            logger.debug(f"Hibikidō OSC: Sent manifestation: {description}")
+            logger.debug(f"Hibikidō OSC: Sent manifestation: {manifestation_id} - {description}")
         except Exception as e:
             logger.error(f"Hibikidō OSC: Failed to send manifestation: {e}")
     

@@ -29,6 +29,7 @@ class OSCRouter:
             'add_preset': command_handlers.handle_add_preset,
             'rebuild_index': command_handlers.handle_rebuild_index,
             'stats': command_handlers.handle_stats,
+            'free': command_handlers.handle_free,
             'stop': command_handlers.handle_stop
         }
         
@@ -58,6 +59,7 @@ class OSCRouter:
         print("  /add_preset \"text\" metadata     - add new effect preset")
         print("  /rebuild_index                   - rebuild FAISS index from database")
         print("  /stats                           - database and orchestrator statistics")
+        print("  /free \"manifestation_id\"        - manually free manifestation niche")
         print("  /stop                            - shutdown server")
         print("="*70)
         print()
