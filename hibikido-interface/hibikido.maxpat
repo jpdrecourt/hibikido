@@ -10,11 +10,300 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 1315.0, 85.0, 770.0, 1313.0 ],
+		"rect" : [ 34.0, 77.0, 1773.0, 1329.0 ],
 		"gridonopen" : 2,
 		"gridsize" : [ 15.0, 15.0 ],
 		"subpatcher_template" : "Default with Grid",
 		"boxes" : [ 			{
+				"box" : 				{
+					"id" : "obj-68",
+					"maxclass" : "toggle",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "int" ],
+					"parameter_enable" : 0,
+					"patching_rect" : [ 1473.0, 406.0, 24.0, 24.0 ]
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-67",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 0,
+					"patching_rect" : [ 1509.0, 605.0, 38.0, 22.0 ],
+					"text" : "dac~"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-66",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "int" ],
+					"patching_rect" : [ 1546.571428571428669, 496.0, 22.0, 22.0 ],
+					"text" : "t 0"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-65",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 2,
+					"outlettype" : [ "int", "" ],
+					"patching_rect" : [ 1496.571428571428669, 307.0, 31.0, 22.0 ],
+					"text" : "t 1 s"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-62",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1496.571428571428669, 262.0, 83.0, 22.0 ],
+					"text" : "prepend open"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-60",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1496.571428571428669, 180.0, 88.0, 22.0 ],
+					"text" : "v #0-audiopath"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-59",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 2,
+					"outlettype" : [ "bang", "" ],
+					"patching_rect" : [ 1496.571428571428669, 144.0, 31.0, 22.0 ],
+					"text" : "t b s"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-57",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1496.571428571428669, 226.0, 81.0, 22.0 ],
+					"text" : "sprintf %s/%s"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-55",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1094.0, 536.0, 88.0, 22.0 ],
+					"text" : "v #0-audiopath"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-50",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1094.0, 442.0, 172.0, 22.0 ],
+					"text" : "sprintf %s../hibikido-data/audio"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-48",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1094.0, 489.0, 77.0, 22.0 ],
+					"text" : "absolutepath"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-44",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 8,
+					"outlettype" : [ "", "", "", "", "", "", "", "" ],
+					"patching_rect" : [ 1368.0, 98.0, 319.0, 22.0 ],
+					"text" : "unjoin 7"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-43",
+					"maxclass" : "newobj",
+					"numinlets" : 0,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1368.0, 35.0, 79.0, 22.0 ],
+					"text" : "r #0-manifest"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-42",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 960.0, 243.0, 101.0, 22.0 ],
+					"text" : "send #0-manifest"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-41",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 3,
+					"outlettype" : [ "signal", "signal", "bang" ],
+					"patching_rect" : [ 1508.571428571428669, 464.0, 57.0, 22.0 ],
+					"text" : "sfplay~ 2"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-40",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 1029.0, 202.0, 54.0, 22.0 ],
+					"text" : "print osc"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-11",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 2,
+					"outlettype" : [ "", "" ],
+					"patching_rect" : [ 960.0, 161.0, 88.0, 22.0 ],
+					"text" : "route /manifest"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-34",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 36.5, 357.0, 57.0, 22.0 ],
+					"text" : "tosymbol"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-33",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 773.0, 42.0, 35.0, 22.0 ],
+					"text" : "/stop"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-31",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 36.0, 401.0, 94.0, 22.0 ],
+					"text" : "prepend /invoke"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-30",
+					"linecount" : 5,
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 268.0, 1233.0, 962.0, 77.0 ],
+					"text" : "/add_recording Mercado25Abril-006.flac \"Chatter weaves through clinks, rustles, and calls—an open market breathes with layered voices and movement under bright shade.\", /add_recording Panning-trolley-001.flac \"Metal wheels rumble across concrete, shifting in pitch and space, a low mechanical groan trailing movement left to right.\", /add_recording siren-attack.flac \"Rising wail spirals outward like an alarmed cry, insistent and mournful, swelling in waves through open, echoing air.\", /add_recording rowing-001.flac \"Oar plunges and pulls, wood creaks under effort, a watery grunt in rhythm with muscle and glide.\", /add_recording rowing-002.flac \"Quick stroke and wet splash, followed by a resonant hollow groan—body and boat locked in cyclical propulsion.\""
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-25",
+					"linecount" : 10,
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 268.0, 1058.0, 945.0, 146.0 ],
+					"text" : "/add_recording bus_sounds-005.flac \"Hissing brakes, soft rumble, sudden squeals and low hums, a vehicle breathing as it lurches, pauses, and exhales metallically.\", /add_recording barco-beep.flac \"Deep, deliberate beeps cut through air like sonar calls, echoing across water, alert and resonant with mechanical urgency.\", /add_recording sardinhas-010.flac \"Frantic chatter, distant clinks, overlapping voices rising like steam, animated, festive, a market alive with sizzling energy.\", /add_recording girgling-waves-013.flac \"Playful trickles and soft gurgles lap against surfaces, as if water speaks in bubbles and shifting shoreline tongues.\", /add_recording old_river_port-023.flac \"Sharp clangs, echoing footfalls, rustling chains—old docks moan under weight and time, a steel memory drenched in tide.\", /add_recording dangling-keys-001.flac \"Bright metallic jingles, short and sharp, dancing midair like sunlight on trembling glass or restless wind chimes.\", /add_recording dawn_chorus-015.flac \"Birdsong layers stretch into sky—calls, whistles, chirps—rising together like threads of morning light woven from breath.\", /add_recording rolling-lamps-003.flac \"Round objects rattle and roll, bumping in rhythm, like hollow bulbs tumbling across wood in a curious slow chase.\", /add_recording frottement-jacaranda-042.flac \"Rough friction, textured rubbing, as if bark kisses bark—slow, dry, intimate scrapes in a vegetal, tactile dialogue.\", /add_recording formigas-007.flac \"Crackling static and insectile murmurs, restless and layered, suggesting miniature chaos hidden just beneath the threshold of hearing.\""
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-22",
+					"linecount" : 2,
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 612.0, 926.0, 772.0, 36.0 ],
+					"text" : "/add_recording Terminal-Fluvial-002.flac \"A dense weave of engine growls, clinking metal, and watery echoes, like a river port alive with unseen movement and tension.\""
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-15",
+					"linecount" : 2,
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 36.5, 921.0, 534.0, 36.0 ],
+					"text" : "/add_recording singing-tubes-002.flac \"Hollow metallic breath sweeps upward, gliding in tremulous waves, like wind whistling through curved steel in a vast chamber.\""
+				}
+
+			}
+, 			{
 				"box" : 				{
 					"bgcolor" : [ 0.666666666666667, 0.196078431372549, 0.196078431372549, 1.0 ],
 					"bgcolor2" : [ 0.172137149796092, 0.172137100044002, 0.172137113045018, 1.0 ],
@@ -32,8 +321,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 794.0, 536.0, 167.0, 91.0 ],
-					"text" : ";\r\nmax launchbrowser C:/Users/jpdre/Music/Projects/250422-Lisboa-Incomum-Octo/hibikido-project/hibikido-interface/start-hibikido-debug.bat"
+					"patching_rect" : [ 825.0, 536.0, 167.0, 91.0 ],
+					"text" : ";\r\nmax launchbrowser C:/Users/jpdre/Music/Projects/250422-Lisboa-Incomum-Octo/hibikido/hibikido-interface/start-hibikido-debug.bat"
 				}
 
 			}
@@ -45,7 +334,7 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 915.0, 442.0, 159.0, 36.0 ],
+					"patching_rect" : [ 829.0, 442.0, 159.0, 36.0 ],
 					"text" : "sprintf \\; max launchbrowser %sstart-hibikido-debug.bat"
 				}
 
@@ -63,26 +352,13 @@
 			}
 , 			{
 				"box" : 				{
-					"id" : "obj-25",
-					"linecount" : 3,
-					"maxclass" : "message",
-					"numinlets" : 2,
-					"numoutlets" : 1,
-					"outlettype" : [ "" ],
-					"patching_rect" : [ 36.5, 943.0, 452.0, 50.0 ],
-					"text" : "/add_recording ./media/singing-tubes-002.flac description \"periodic whistling of a long tube rotated in the air\" duration 3.47 freq_low 600 freq_high 2000 cookie nomnom"
-				}
-
-			}
-, 			{
-				"box" : 				{
 					"id" : "obj-23",
 					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 185.0, 774.0, 452.0, 22.0 ],
-					"text" : "/stats"
+					"text" : "bang"
 				}
 
 			}
@@ -132,7 +408,7 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 41.0, 577.0, 387.0, 66.0 ],
 					"tabmode" : 0,
-					"text" : "/stats\n"
+					"text" : "\n"
 				}
 
 			}
@@ -144,8 +420,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 591.0, 536.0, 167.0, 91.0 ],
-					"text" : ";\r\nmax launchbrowser C:/Users/jpdre/Music/Projects/250422-Lisboa-Incomum-Octo/hibikido-project/hibikido-interface/start-hibikido.bat"
+					"patching_rect" : [ 625.0, 534.0, 167.0, 91.0 ],
+					"text" : ";\r\nmax launchbrowser C:/Users/jpdre/Music/Projects/250422-Lisboa-Incomum-Octo/hibikido/hibikido-interface/start-hibikido.bat"
 				}
 
 			}
@@ -164,11 +440,12 @@
 , 			{
 				"box" : 				{
 					"id" : "obj-8",
+					"linecount" : 2,
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 625.0, 442.0, 263.0, 22.0 ],
+					"patching_rect" : [ 625.0, 442.0, 176.0, 36.0 ],
 					"text" : "sprintf \\; max launchbrowser %sstart-hibikido.bat"
 				}
 
@@ -193,7 +470,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 2,
 					"outlettype" : [ "", "" ],
-					"patching_rect" : [ 36.5, 339.0, 59.0, 22.0 ],
+					"patching_rect" : [ 36.5, 320.0, 59.0, 22.0 ],
 					"text" : "route text"
 				}
 
@@ -216,7 +493,7 @@
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 36.5, 416.0, 109.0, 22.0 ],
+					"patching_rect" : [ 37.0, 442.0, 109.0, 22.0 ],
 					"text" : "s #0-embed-server"
 				}
 
@@ -250,17 +527,6 @@
 					"parameter_enable" : 0,
 					"patching_rect" : [ 36.5, 197.0, 293.0, 80.0 ],
 					"tabmode" : 0
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-3",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 960.0, 153.0, 32.0, 22.0 ],
-					"text" : "print"
 				}
 
 			}
@@ -371,8 +637,29 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-40", 0 ],
+					"source" : [ "obj-11", 1 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-42", 0 ],
+					"source" : [ "obj-11", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-58", 0 ],
 					"source" : [ "obj-14", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-26", 0 ],
+					"source" : [ "obj-15", 0 ]
 				}
 
 			}
@@ -392,14 +679,14 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-6", 0 ],
+					"destination" : [ "obj-34", 0 ],
 					"source" : [ "obj-19", 0 ]
 				}
 
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-3", 0 ],
+					"destination" : [ "obj-11", 0 ],
 					"source" : [ "obj-2", 0 ]
 				}
 
@@ -423,6 +710,13 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-26", 0 ],
+					"source" : [ "obj-22", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-26", 0 ],
 					"source" : [ "obj-25", 0 ]
 				}
 
@@ -431,6 +725,34 @@
 				"patchline" : 				{
 					"destination" : [ "obj-28", 1 ],
 					"source" : [ "obj-27", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-26", 0 ],
+					"source" : [ "obj-30", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-6", 0 ],
+					"source" : [ "obj-31", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-1", 0 ],
+					"source" : [ "obj-33", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-31", 0 ],
+					"source" : [ "obj-34", 0 ]
 				}
 
 			}
@@ -451,6 +773,48 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-66", 0 ],
+					"source" : [ "obj-41", 2 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-67", 1 ],
+					"source" : [ "obj-41", 1 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-67", 0 ],
+					"source" : [ "obj-41", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-44", 0 ],
+					"source" : [ "obj-43", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-59", 0 ],
+					"source" : [ "obj-44", 3 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-55", 0 ],
+					"source" : [ "obj-48", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-51", 0 ],
 					"source" : [ "obj-49", 0 ]
 				}
@@ -459,6 +823,14 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-27", 0 ],
+					"order" : 1,
+					"source" : [ "obj-5", 1 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-50", 0 ],
 					"order" : 0,
 					"source" : [ "obj-5", 1 ]
 				}
@@ -467,8 +839,15 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-8", 0 ],
-					"order" : 1,
+					"order" : 2,
 					"source" : [ "obj-5", 1 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-48", 0 ],
+					"source" : [ "obj-50", 0 ]
 				}
 
 			}
@@ -481,8 +860,75 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-62", 0 ],
+					"source" : [ "obj-57", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-57", 1 ],
+					"midpoints" : [ 1518.071428571428669, 171.0, 1649.0, 171.0, 1649.0, 213.0, 1568.071428571428669, 213.0 ],
+					"source" : [ "obj-59", 1 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-60", 0 ],
+					"source" : [ "obj-59", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-57", 0 ],
+					"source" : [ "obj-60", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-58", 0 ],
 					"source" : [ "obj-61", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-65", 0 ],
+					"source" : [ "obj-62", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-41", 0 ],
+					"source" : [ "obj-65", 1 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-68", 0 ],
+					"midpoints" : [ 1506.071428571428669, 345.0, 1482.5, 345.0 ],
+					"source" : [ "obj-65", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-68", 0 ],
+					"midpoints" : [ 1556.071428571428669, 531.0, 1600.0, 531.0, 1600.0, 388.0, 1482.5, 388.0 ],
+					"source" : [ "obj-66", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-41", 0 ],
+					"midpoints" : [ 1482.5, 451.0, 1518.071428571428669, 451.0 ],
+					"source" : [ "obj-68", 0 ]
 				}
 
 			}
