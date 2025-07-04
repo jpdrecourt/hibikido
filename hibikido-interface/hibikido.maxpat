@@ -10,11 +10,46 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 34.0, 77.0, 1773.0, 1329.0 ],
+		"rect" : [ 34.0, 77.0, 1888.0, 1329.0 ],
 		"gridonopen" : 2,
 		"gridsize" : [ 15.0, 15.0 ],
 		"subpatcher_template" : "Default with Grid",
 		"boxes" : [ 			{
+				"box" : 				{
+					"id" : "obj-32",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 0,
+					"patching_rect" : [ 1764.0, 473.0, 109.0, 22.0 ],
+					"text" : "s #0-embed-server"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-29",
+					"maxclass" : "newobj",
+					"numinlets" : 1,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 1764.0, 433.0, 80.0, 22.0 ],
+					"text" : "prepend /free"
+				}
+
+			}
+, 			{
+				"box" : 				{
+					"id" : "obj-13",
+					"maxclass" : "newobj",
+					"numinlets" : 2,
+					"numoutlets" : 2,
+					"outlettype" : [ "", "" ],
+					"patching_rect" : [ 1764.0, 401.0, 46.0, 22.0 ],
+					"text" : "route 0"
+				}
+
+			}
+, 			{
 				"box" : 				{
 					"id" : "obj-3",
 					"maxclass" : "newobj",
@@ -207,11 +242,11 @@
 				"box" : 				{
 					"id" : "obj-57",
 					"maxclass" : "newobj",
-					"numinlets" : 2,
+					"numinlets" : 3,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 1496.571428571428669, 226.0, 81.0, 22.0 ],
-					"text" : "sprintf %s/%s"
+					"patching_rect" : [ 1496.571428571428669, 226.0, 101.0, 22.0 ],
+					"text" : "sprintf %s %s/%s"
 				}
 
 			}
@@ -525,7 +560,7 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 625.0, 534.0, 167.0, 91.0 ],
+					"patching_rect" : [ 625.0, 533.0, 167.0, 91.0 ],
 					"text" : ";\r\nmax launchbrowser C:/Users/jpdre/Music/Projects/250422-Lisboa-Incomum-Octo/hibikido/hibikido-interface/start-hibikido.bat"
 				}
 
@@ -763,6 +798,13 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-29", 0 ],
+					"source" : [ "obj-13", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-58", 0 ],
 					"source" : [ "obj-14", 0 ]
 				}
@@ -842,6 +884,13 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-32", 0 ],
+					"source" : [ "obj-29", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-26", 0 ],
 					"source" : [ "obj-30", 0 ]
 				}
@@ -885,6 +934,15 @@
 			}
 , 			{
 				"patchline" : 				{
+					"destination" : [ "obj-13", 0 ],
+					"midpoints" : [ 1592.071428571428669, 387.0, 1773.5, 387.0 ],
+					"order" : 0,
+					"source" : [ "obj-41", 2 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
 					"destination" : [ "obj-67", 1 ],
 					"source" : [ "obj-41", 1 ]
 				}
@@ -900,6 +958,7 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-80", 1 ],
+					"order" : 1,
 					"source" : [ "obj-41", 2 ]
 				}
 
@@ -915,6 +974,14 @@
 				"patchline" : 				{
 					"destination" : [ "obj-44", 0 ],
 					"source" : [ "obj-43", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-57", 0 ],
+					"midpoints" : [ 1377.5, 211.0, 1506.071428571428669, 211.0 ],
+					"source" : [ "obj-44", 0 ]
 				}
 
 			}
@@ -995,8 +1062,8 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-57", 1 ],
-					"midpoints" : [ 1518.071428571428669, 171.0, 1649.0, 171.0, 1649.0, 213.0, 1568.071428571428669, 213.0 ],
+					"destination" : [ "obj-57", 2 ],
+					"midpoints" : [ 1518.071428571428669, 171.0, 1649.0, 171.0, 1649.0, 213.0, 1588.071428571428669, 213.0 ],
 					"source" : [ "obj-59", 1 ]
 				}
 
@@ -1010,7 +1077,7 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-57", 0 ],
+					"destination" : [ "obj-57", 1 ],
 					"source" : [ "obj-60", 0 ]
 				}
 
