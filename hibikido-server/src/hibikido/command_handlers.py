@@ -67,7 +67,7 @@ class CommandHandlers:
                 document = result["document"]
                 
                 # Extract metadata for orchestrator
-                bark_bands_raw = document.get("bark_bands_raw", document.get("bark_bands", [0.0] * 24))
+                bark_bands_raw = document.get("bark_bands_raw", [0.0] * 24)
                 bark_norm = document.get("bark_norm", 0.0)
                 sound_id = str(getattr(document, 'doc_id', document.get('source_path', 'unknown')))
                 

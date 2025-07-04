@@ -70,8 +70,6 @@ class Orchestrator:
             self.queue.append((manifestation_data, request_time))
             
             sound_id = manifestation_data.get("sound_id", "unknown")
-            bark_bands = manifestation_data.get("bark_bands", [0.0] * 24)
-            
             logger.debug(f"Queued manifestation: {sound_id}")
             
             # Process queue immediately - event-driven approach
@@ -213,11 +211,6 @@ class Orchestrator:
         logger.debug(f"Updated ecosystem cache: {len(self.active_niches)} niches, "
                     f"total energy: {BarkAnalyzer.vector_norm(self.ecosystem_raw):.3f}")
     
-    def _cleanup_expired(self):
-        """Remove expired niches (legacy - now niches are freed manually)."""
-        # Keep this method for backward compatibility but it's no longer used
-        # since niches are freed manually via /free command
-        pass
     
     def get_stats(self) -> Dict[str, Any]:
         """Get orchestrator statistics."""
