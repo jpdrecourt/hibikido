@@ -10,7 +10,7 @@ import json
 import logging
 import os
 from typing import Dict, Any
-from .bark_analyzer import analyze_audio_file
+from .bark_analyzer import analyze_audio_file, BarkAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -67,8 +67,8 @@ class CommandHandlers:
                 document = result["document"]
                 
                 # Extract metadata for orchestrator
-                bark_bands = document.get("bark_bands", [0.0] * 24)  # Default to silence
-                duration = document.get("duration", 1.0)
+                bark_bands_raw = document.get("bark_bands_raw", document.get("bark_bands", [0.0] * 24))
+                bark_norm = document.get("bark_norm", 0.0)
                 sound_id = str(getattr(document, 'doc_id', document.get('source_path', 'unknown')))
                 
                 # Prepare manifestation data
@@ -84,8 +84,8 @@ class CommandHandlers:
                     "end": float(document.get("end", 1.0)),
                     "parameters": "[]",  # Empty for segments
                     "sound_id": sound_id,
-                    "bark_bands": bark_bands,
-                    "duration": duration
+                    "bark_bands_raw": bark_bands_raw,
+                    "bark_norm": bark_norm
                 }
                 
                 # Queue for orchestrator (no immediate manifestation)
@@ -160,8 +160,9 @@ class CommandHandlers:
             
             # Analyze audio file for duration and Bark bands
             try:
-                bark_bands, duration = analyze_audio_file(full_audio_path)
-                logger.info(f"Audio analysis: {duration:.2f}s, Bark bands sum: {sum(bark_bands):.3f}")
+                bark_bands_raw, duration = analyze_audio_file(full_audio_path)
+                bark_norm = BarkAnalyzer.vector_norm(bark_bands_raw)
+                logger.info(f"Audio analysis: {duration:.2f}s, Bark norm: {bark_norm:.3f}")
             except Exception as e:
                 self.osc_handler.send_error(f"audio analysis failed: {e}")
                 return
@@ -203,7 +204,8 @@ class CommandHandlers:
                 description=segment_description,
                 embedding_text=segment_embedding_text,
                 faiss_index=faiss_id,
-                bark_bands=bark_bands,
+                bark_bands_raw=bark_bands_raw,
+                bark_norm=bark_norm,
                 duration=duration
             )
             

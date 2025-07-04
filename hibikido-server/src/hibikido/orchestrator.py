@@ -16,32 +16,38 @@ from .bark_analyzer import BarkAnalyzer
 logger = logging.getLogger(__name__)
 
 class Orchestrator:
-    def __init__(self, bark_similarity_threshold: float = 0.5, time_precision: float = 0.1):
+    def __init__(self, bark_similarity_threshold: float = 0.5):
         """
         Initialize orchestrator.
         
         Args:
             bark_similarity_threshold: Maximum allowed Bark band cosine similarity (0.5 = 50%)
-            time_precision: Time precision in seconds (0.1 = 100ms)
         """
         self.bark_similarity_threshold = bark_similarity_threshold
-        self.time_precision = time_precision
         
-        # Active niches: list of dicts with manifestation_id, start_time, end_time, bark_bands
+        # Active niches: list of dicts with manifestation_id, bark_bands_raw, bark_norm
         self.active_niches = []
+        
+        # Cached ecosystem state for performance
+        self.ecosystem_raw = [0.0] * 24
+        self.ecosystem_norm = [0.0] * 24
         
         # Queue for manifestations: list of (manifestation_data, request_time)
         self.queue = []
         
-        # Callback for sending manifestations
+        # Callbacks for sending manifestations and niche updates
         self.manifest_callback = None
+        self.niche_callback = None
         
-        logger.info(f"Orchestrator initialized: {bark_similarity_threshold:.1f} Bark similarity threshold, "
-                   f"{time_precision*1000:.0f}ms precision")
+        logger.info(f"Orchestrator initialized: {bark_similarity_threshold:.1f} Bark similarity threshold")
     
     def set_manifest_callback(self, callback: Callable):
         """Set callback function for sending manifestations."""
         self.manifest_callback = callback
+    
+    def set_niche_callback(self, callback: Callable):
+        """Set callback function for sending niche updates."""
+        self.niche_callback = callback
     
     def queue_manifestation(self, manifestation_data: Dict[str, Any]) -> bool:
         """
@@ -66,27 +72,16 @@ class Orchestrator:
             sound_id = manifestation_data.get("sound_id", "unknown")
             bark_bands = manifestation_data.get("bark_bands", [0.0] * 24)
             
-            logger.debug(f"Queued manifestation: {sound_id} [Bark bands sum: {sum(bark_bands):.3f}]")
+            logger.debug(f"Queued manifestation: {sound_id}")
+            
+            # Process queue immediately - event-driven approach
+            self._process_queue()
             return True
             
         except Exception as e:
             logger.error(f"Failed to queue manifestation: {e}")
             return False
     
-    def update(self):
-        """
-        Periodic update: clean expired niches and process queue.
-        This is where manifestations actually get sent.
-        """
-        try:
-            # Clean up expired niches
-            self._cleanup_expired()
-            
-            # Process queue - try to manifest waiting sounds
-            self._process_queue()
-            
-        except Exception as e:
-            logger.error(f"Orchestrator update failed: {e}")
     
     def _process_queue(self):
         """Process the manifestation queue - send manifestations when niches are free."""
@@ -100,18 +95,18 @@ class Orchestrator:
         # Process queue in FIFO order
         for manifestation_data, request_time in self.queue:
             try:
-                # Extract Bark bands/duration info
+                # Extract Bark bands info
                 sound_id = manifestation_data.get("sound_id", "unknown")
-                bark_bands = manifestation_data.get("bark_bands", [0.0] * 24)
-                duration = float(manifestation_data.get("duration", 1.0))
+                bark_bands_raw = manifestation_data.get("bark_bands_raw", [0.0] * 24)
+                bark_norm = manifestation_data.get("bark_norm", 0.0)
                 
-                # Check for conflicts
-                conflict_end_time = self._find_conflict(bark_bands, now)
+                # Check for conflicts against cached ecosystem
+                has_conflict = self._find_conflict(bark_bands_raw)
                 
-                if conflict_end_time is None:
+                if not has_conflict:
                     # No conflict - generate unique manifestation ID and register niche
                     manifestation_id = f"{manifestation_data['index']}_{int(now * 1000)}"
-                    self._register_niche(manifestation_id, now, now + duration, bark_bands)
+                    self._register_niche(manifestation_id, bark_bands_raw, bark_norm)
                     
                     # Send manifestation via callback
                     self.manifest_callback(
@@ -125,8 +120,12 @@ class Orchestrator:
                         manifestation_data["parameters"]
                     )
                     
+                    # Send niche update
+                    if self.niche_callback:
+                        self.niche_callback(manifestation_id, bark_bands_raw)
+                    
                     manifestations_sent += 1
-                    logger.debug(f"Manifested: {manifestation_id} [Bark sum: {sum(bark_bands):.3f}] "
+                    logger.debug(f"Manifested: {manifestation_id} [Bark norm: {bark_norm:.3f}] "
                                f"(queued for {now - request_time:.1f}s)")
                 else:
                     # Still has conflict - keep in queue
@@ -143,49 +142,76 @@ class Orchestrator:
             logger.debug(f"Processed queue: {manifestations_sent} manifestations sent, "
                         f"{len(self.queue)} still queued")
     
-    def _find_conflict(self, bark_bands: List[float], now: float) -> Optional[float]:
+    def _find_conflict(self, new_sound_raw: List[float]) -> bool:
         """
-        Find if Bark bands conflict with active niches.
+        Find if new sound conflicts with current ecosystem.
         
+        Args:
+            new_sound_raw: Raw Bark band energy vector of new sound
+            
         Returns:
-            None if no conflict, otherwise the end_time of the earliest conflicting niche
+            True if conflict exists, False otherwise
         """
-        earliest_conflict_end = None
+        if not self.active_niches:
+            return False
         
-        for niche in self.active_niches:
-            # Check time overlap (sound is still active)
-            if now < niche["end_time"]:
-                # Check Bark band similarity
-                similarity = BarkAnalyzer.cosine_similarity(bark_bands, niche["bark_bands"])
-                if similarity > self.bark_similarity_threshold:
-                    if earliest_conflict_end is None or niche["end_time"] < earliest_conflict_end:
-                        earliest_conflict_end = niche["end_time"]
+        # Normalize new sound for comparison
+        new_sound_norm = BarkAnalyzer.normalize_vector(new_sound_raw)
         
-        return earliest_conflict_end
+        # Compare against cached normalized ecosystem
+        similarity = BarkAnalyzer.cosine_similarity(new_sound_norm, self.ecosystem_norm)
+        
+        return similarity > self.bark_similarity_threshold
     
     
-    def _register_niche(self, manifestation_id: str, start_time: float, end_time: float,
-                       bark_bands: List[float]):
-        """Register a new active niche."""
+    def _register_niche(self, manifestation_id: str, bark_bands_raw: List[float], bark_norm: float):
+        """Register a new active niche and update cached ecosystem."""
         niche = {
             "manifestation_id": manifestation_id,
-            "start_time": start_time,
-            "end_time": end_time,
-            "bark_bands": bark_bands
+            "bark_bands_raw": bark_bands_raw,
+            "bark_norm": bark_norm
         }
         self.active_niches.append(niche)
+        
+        # Update cached ecosystem
+        self._update_ecosystem_cache()
     
     def free_manifestation(self, manifestation_id: str) -> bool:
-        """Manually free a manifestation by ID."""
+        """Manually free a manifestation by ID and update ecosystem."""
         before_count = len(self.active_niches)
         self.active_niches = [n for n in self.active_niches if n["manifestation_id"] != manifestation_id]
         
         freed = len(self.active_niches) < before_count
         if freed:
+            # Update cached ecosystem after removal
+            self._update_ecosystem_cache()
+            
+            # Process queue immediately - new sounds may now fit
+            self._process_queue()
+            
             logger.debug(f"Freed manifestation: {manifestation_id}")
         else:
             logger.warning(f"Manifestation not found for freeing: {manifestation_id}")
         return freed
+    
+    def _update_ecosystem_cache(self):
+        """Update cached ecosystem raw and normalized vectors."""
+        if not self.active_niches:
+            self.ecosystem_raw = [0.0] * 24
+            self.ecosystem_norm = [0.0] * 24
+            return
+        
+        # Sum all raw vectors
+        self.ecosystem_raw = [0.0] * 24
+        for niche in self.active_niches:
+            for i in range(24):
+                self.ecosystem_raw[i] += niche["bark_bands_raw"][i]
+        
+        # Normalize the combined ecosystem
+        self.ecosystem_norm = BarkAnalyzer.normalize_vector(self.ecosystem_raw)
+        
+        logger.debug(f"Updated ecosystem cache: {len(self.active_niches)} niches, "
+                    f"total energy: {BarkAnalyzer.vector_norm(self.ecosystem_raw):.3f}")
     
     def _cleanup_expired(self):
         """Remove expired niches (legacy - now niches are freed manually)."""
@@ -198,12 +224,6 @@ class Orchestrator:
         return {
             "active_niches": len(self.active_niches),
             "queued_requests": len(self.queue),
-            "bark_similarity_threshold": self.bark_similarity_threshold,
-            "time_precision": self.time_precision
+            "bark_similarity_threshold": self.bark_similarity_threshold
         }
     
-    # Legacy method for backward compatibility (no longer used)
-    def evaluate_request(self, request: Dict[str, Any]) -> Dict[str, Any]:
-        """Legacy method - now everything goes through queue."""
-        logger.warning("evaluate_request() called - should use queue_manifestation() instead")
-        return {"status": "allowed", "start_time": time.time()}

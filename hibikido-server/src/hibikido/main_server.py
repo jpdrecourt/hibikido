@@ -45,7 +45,6 @@ class HibikidoServer:
         self.osc_router = OSCRouter(self.osc_handler)
         
         self.is_running = False
-        self.update_thread = None
     
     def initialize(self) -> bool:
         """Initialize all components."""
@@ -57,8 +56,9 @@ class HibikidoServer:
         ):
             return False
         
-        # Setup orchestrator callback
+        # Setup orchestrator callbacks
         self.orchestrator.set_manifest_callback(self.osc_handler.send_manifest)
+        self.orchestrator.set_niche_callback(self.osc_handler.send_niche)
         
         # Register OSC handlers
         self.osc_router.register_handlers(self.command_handlers)
@@ -82,8 +82,7 @@ class HibikidoServer:
                 return
             self.is_running = True
 
-            # Start orchestrator update thread
-            self._start_orchestrator_updates()
+            # Event-driven orchestration - no background threads needed
             
             # Send ready signal
             self.osc_handler.send_ready()
@@ -99,19 +98,6 @@ class HibikidoServer:
             logger.error(f"Server error: {e}")
             self.shutdown()
     
-    def _start_orchestrator_updates(self):
-        """Start background thread for orchestrator updates."""
-        def update_loop():
-            while self.is_running:
-                try:
-                    self.orchestrator.update()
-                    time.sleep(self.config['orchestrator']['time_precision'])
-                except Exception as e:
-                    logger.error(f"Orchestrator update error: {e}")
-        
-        self.update_thread = threading.Thread(target=update_loop, daemon=True)
-        self.update_thread.start()
-        logger.info("Orchestrator update thread started")
     
     def _print_banner(self):
         """Print startup banner with information."""

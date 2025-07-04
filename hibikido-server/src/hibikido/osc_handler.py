@@ -42,6 +42,7 @@ class OSCHandler:
             
             # Output addresses
             'manifest': '/manifest',  # Changed from 'result'
+            'niche': '/niche',       # Niche status for ecosystem visualization
             'confirm': '/confirm',
             'stats_result': '/stats_result',
             'error': '/error'
@@ -100,6 +101,16 @@ class OSCHandler:
             logger.debug(f"Hibikidō OSC: Sent manifestation: {manifestation_id} - {description}")
         except Exception as e:
             logger.error(f"Hibikidō OSC: Failed to send manifestation: {e}")
+    
+    def send_niche(self, manifestation_id: str, bark_bands_raw: List[float]):
+        """Send niche status message for ecosystem visualization."""
+        try:
+            # Send manifestation_id followed by 24 bark band values
+            message_data = [manifestation_id] + bark_bands_raw
+            self.client.send_message(self.addresses['niche'], message_data)
+            logger.debug(f"Hibikidō OSC: Sent niche: {manifestation_id}")
+        except Exception as e:
+            logger.error(f"Hibikidō OSC: Failed to send niche: {e}")
     
     def send_confirm(self, message: str):
         """Send confirmation message."""

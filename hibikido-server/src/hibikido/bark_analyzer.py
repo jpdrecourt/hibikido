@@ -47,7 +47,7 @@ class BarkAnalyzer:
             
         Returns:
             Tuple of (bark_vector, duration) where:
-            - bark_vector: List of 24 normalized Bark band energies
+            - bark_vector: List of 24 raw Bark band energies
             - duration: Duration of analyzed segment in seconds
             
         Raises:
@@ -90,14 +90,14 @@ class BarkAnalyzer:
     
     def _compute_bark_bands(self, y: np.ndarray, sr: int) -> List[float]:
         """
-        Compute normalized Bark band energy vector.
+        Compute raw Bark band energy vector.
         
         Args:
             y: Audio signal
             sr: Sample rate
             
         Returns:
-            List of 24 normalized Bark band energies (0.0 to 1.0)
+            List of 24 raw Bark band energies (not normalized)
         """
         # Compute power spectral density using STFT
         stft = librosa.stft(y, hop_length=512, n_fft=2048)
@@ -129,18 +129,41 @@ class BarkAnalyzer:
                 
             bark_energies.append(band_energy)
         
-        # Convert to numpy array for easier manipulation
+        # Convert to numpy array and ensure all values are finite
         bark_energies = np.array(bark_energies)
-        
-        # Normalize to unit vector (L2 norm)
-        total_energy = np.linalg.norm(bark_energies)
-        if total_energy > 0:
-            bark_energies = bark_energies / total_energy
-        
-        # Convert back to list and ensure all values are finite
         bark_vector = [float(x) if np.isfinite(x) else 0.0 for x in bark_energies]
         
         return bark_vector
+    
+    @staticmethod
+    def normalize_vector(vector: List[float]) -> List[float]:
+        """
+        Normalize vector to unit length (L2 norm).
+        
+        Args:
+            vector: Input vector
+            
+        Returns:
+            Normalized vector (unit length)
+        """
+        v = np.array(vector)
+        norm = np.linalg.norm(v)
+        if norm == 0:
+            return [0.0] * len(vector)
+        return (v / norm).tolist()
+    
+    @staticmethod
+    def vector_norm(vector: List[float]) -> float:
+        """
+        Calculate L2 norm of vector.
+        
+        Args:
+            vector: Input vector
+            
+        Returns:
+            L2 norm value
+        """
+        return float(np.linalg.norm(np.array(vector)))
     
     @staticmethod
     def cosine_similarity(vector1: List[float], vector2: List[float]) -> float:

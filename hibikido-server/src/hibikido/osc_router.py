@@ -47,8 +47,7 @@ class OSCRouter:
               f"{stats.get('total_searchable_items', 0)} searchable")
         print(f"FAISS Index: {embedding_count} embeddings")
         print(f"Index file: {config['embedding']['index_file']}")
-        print(f"Orchestrator: {orch_stats['bark_similarity_threshold']:.1f} Bark similarity threshold, "
-              f"{orch_stats['time_precision']*1000:.0f}ms precision")
+        print(f"Orchestrator: {orch_stats['bark_similarity_threshold']:.1f} Bark similarity threshold (event-driven)")
         print(f"Listening: {config['osc']['listen_ip']}:{config['osc']['listen_port']}")
         print(f"Sending: {config['osc']['send_ip']}:{config['osc']['send_port']}")
         print("\nOSC Commands:")
