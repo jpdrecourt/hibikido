@@ -49,6 +49,10 @@ class Orchestrator:
         """Set callback function for sending niche updates."""
         self.niche_callback = callback
     
+    def process_queue(self):
+        """Manually trigger queue processing (for batch operations)."""
+        self._process_queue()
+    
     def queue_manifestation(self, manifestation_data: Dict[str, Any]) -> bool:
         """
         Queue a manifestation for orchestrator processing.
@@ -72,7 +76,7 @@ class Orchestrator:
             sound_id = manifestation_data.get("sound_id", "unknown")
             logger.debug(f"Queued manifestation: {sound_id}")
             
-            # Process queue immediately - event-driven approach
+            # Process queue immediately after each addition - event-driven approach
             self._process_queue()
             return True
             

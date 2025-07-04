@@ -165,3 +165,7 @@ For personal artistic tools, functional validation matters more than test covera
 **Launch Workflow**: Max/MSP runs batch scripts from `hibikido-interface/` which cd to `hibikido-server/` and use `config.json` from there.
 
 The system implements an "invocation protocol" - sounds manifest when "the cosmos permits" rather than on demand, creating an intentionally non-deterministic but perceptually-aware audio experience using Bark band analysis for conflict detection.
+
+## Principles
+
+- Do not keep backward compatibility, but tell me when a change is breaking.

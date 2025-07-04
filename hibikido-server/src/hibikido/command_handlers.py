@@ -88,7 +88,7 @@ class CommandHandlers:
                     "bark_norm": bark_norm
                 }
                 
-                # Queue for orchestrator (no immediate manifestation)
+                # Queue for orchestrator (immediate processing per sound)
                 if self.orchestrator.queue_manifestation(manifestation_data):
                     queued_count += 1
             
@@ -134,6 +134,7 @@ class CommandHandlers:
     
     def handle_add_recording(self, unused_addr: str, *args):
         """Handle add recording requests with simplified syntax: /add_recording [file_path] "[description]"."""
+        logger.info(f"HANDLER ENTRY: handle_add_recording called with {len(args)} args")
         try:
             if len(args) < 2:
                 self.osc_handler.send_error("add_recording requires file path and description")

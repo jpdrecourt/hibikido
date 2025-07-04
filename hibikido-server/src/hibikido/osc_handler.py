@@ -68,9 +68,11 @@ class OSCHandler:
     
     def register_handlers(self, handlers: Dict[str, callable]):
         """Register message handlers with the dispatcher."""
+        logger.info(f"Hibikidō OSC: Registering {len(handlers)} handlers")
         for address_name, handler_func in handlers.items():
             if address_name in self.addresses:
                 osc_address = self.addresses[address_name]
+                logger.info(f"Hibikidō OSC: Mapping {osc_address} -> {handler_func.__name__}")
                 self.dispatcher.map(osc_address, handler_func)
                 logger.debug(f"Hibikidō OSC: Registered handler for {osc_address}")
             else:
