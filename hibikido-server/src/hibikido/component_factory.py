@@ -62,8 +62,7 @@ class ComponentFactory:
         )
         
         orchestrator = Orchestrator(
-            bark_similarity_threshold=self.config['orchestrator']['bark_similarity_threshold'],
-            time_precision=self.config['orchestrator']['time_precision']
+            bark_similarity_threshold=self.config['orchestrator']['bark_similarity_threshold']
         )
         
         return db_manager, embedding_manager, text_processor, osc_handler, orchestrator
