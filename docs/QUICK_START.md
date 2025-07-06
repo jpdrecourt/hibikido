@@ -38,14 +38,19 @@ cp sample_config.json config.json
 ### Start the Server
 ```bash
 cd hibikido-server
-python -m hibikido.main_server --config config.json
+python -m hibikido.main_server --config config.json --log-level DEBUG
 ```
 
 You should see:
 ```
-HIBIKIDŌ SERVER READY
-Database stats: 0 segments, 0 presets, 0 searchable
-OSC server listening on 127.0.0.1:9000
+======================================================================
+🎵 HIBIKIDŌ SERVER READY 🎵
+======================================================================
+Database: 0 segments, 0 presets, 0 searchable
+FAISS Index: 0 embeddings
+Orchestrator: 0.5 Bark similarity threshold (event-driven)
+Listening: 127.0.0.1:9000
+Sending: 127.0.0.1:9001
 ```
 
 ### Add Your First Sound
@@ -53,7 +58,7 @@ From Max/MSP or any OSC client:
 
 ```
 Send to 127.0.0.1:9000:
-/add_recording "/path/to/your/audio.wav" "description" "atmospheric drone"
+/add_recording "/path/to/your/audio.wav" "atmospheric drone"
 
 Expected response:  
 /confirm "added recording: your_file.wav with auto-segment"
@@ -86,15 +91,15 @@ The `/manifest` message contains:
 # Put audio files in hibikido-data/audio/
 # Then add them via OSC:
 
-/add_recording "hibikido-data/audio/forest_ambience.wav" "description" "forest wind through trees"
-/add_recording "hibikido-data/audio/metal_scrape.wav" "description" "metallic scraping industrial"
-/add_recording "hibikido-data/audio/synth_pad.wav" "description" "warm analog synthesizer pad"
+/add_recording "hibikido-data/audio/forest_ambience.wav" "forest wind through trees"
+/add_recording "hibikido-data/audio/metal_scrape.wav" "metallic scraping industrial"
+/add_recording "hibikido-data/audio/synth_pad.wav" "warm analog synthesizer pad"
 ```
 
 ### Add Specific Segments
 For precise timing:
 ```
-/add_segment "your_file.wav" "description" "wind gusts" "start" 0.1 "end" 0.6 "segmentation_id" "manual" "freq_low" 200 "freq_high" 2000 "duration" 3.5
+/add_segment "your_file.wav" "wind gusts" "start" 0.1 "end" 0.6
 ```
 
 ### Check Your Database
@@ -145,8 +150,9 @@ cd hibikido-interface
 Edit `config.json` to adjust:
 - Search sensitivity (`min_score`)
 - Number of results (`top_k`)  
+- Bark band similarity threshold (`bark_similarity_threshold`)
 - Orchestration timing (`time_precision`)
-- Frequency overlap threshold (`overlap_threshold`)
+- Audio directory path (`audio_directory`)
 
 ## Troubleshooting
 

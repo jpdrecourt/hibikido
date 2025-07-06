@@ -12,11 +12,17 @@ hibikido-project/                    # Monorepo root
 │   ├── src/hibikido/               # Core application code
 │   ├── tests/                      # Test suite
 │   ├── sample_config.json          # Configuration template
-│   └── CLAUDE.md                   # Development guide
+│   └── README.md                   # Server documentation
 ├── hibikido-interface/             # Max/MSP client
 │   ├── hibikido.maxpat            # Main interface patch
 │   ├── start-hibikido.bat         # Windows server launcher
 │   └── start-hibikido-debug.bat   # Debug mode launcher
+├── docs/                           # Documentation
+│   ├── PHILOSOPHY.md              # Artistic vision
+│   ├── TECHNICAL_GUIDE.md         # Complete technical reference
+│   └── QUICK_START.md             # Getting started guide
+├── CLAUDE.md                       # Development guide for Claude Code
+├── DEPLOYMENT_GUIDE.md            # This file
 └── hibikido-data/                  # Local data (not tracked in git)
     ├── database/                   # TinyDB JSON files
     ├── index/                      # FAISS semantic indices

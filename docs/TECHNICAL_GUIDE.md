@@ -121,7 +121,7 @@ Send to the server (default: `127.0.0.1:9000`):
 /add_effect "effects/reverb/cathedral.dll" '{"description":"gothic cathedral reverb"}'
 → Add new effect and auto-create default preset
 
-/add_segment "forest_01.wav" "description" "wind gusts" "start" 0.1 "end" 0.6 "segmentation_id" "manual" "duration" 3.5
+/add_segment "forest_01.wav" "wind gusts" "start" 0.1 "end" 0.6
 → Add new segment with timing and duration metadata (Bark bands calculated automatically)
 
 /add_preset "warm cathedral ambience" '{"effect_path":"effects/reverb/cathedral.dll", "parameters":[0.8, 0.3, 0.9]}'

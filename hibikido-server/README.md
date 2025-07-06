@@ -21,8 +21,8 @@ python -m hibikido.main_server --config config.json
 /add_recording "ambient/forest.wav" "ethereal forest breathing"
 # Automatically calculates duration and Bark bands, creates full-length segment
 
-/add_segment "audio.wav" "description" "wind gusts" "start" 0.1 "end" 0.6
-# Manual segment creation with optional metadata
+/add_segment "audio.wav" "wind gusts" "start" 0.1 "end" 0.6
+# Manual segment creation with auto Bark band analysis
 ```
 
 **Search:**

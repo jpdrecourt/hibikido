@@ -8,7 +8,7 @@
 
 Instead of browsing folders or remembering filenames, you speak to the system and wait for sound manifestations. The system understands semantic relationships - _"warm analog pulse"_ finds vintage synthesizer patterns, _"ritualistic drone"_ discovers deep sustained tones.
 
-**Technical**: Neural semantic search over hierarchical audio database with real-time frequency conflict resolution.
+**Technical**: Neural semantic search over hierarchical audio database with real-time Bark band frequency conflict resolution using perceptual audio analysis.
 **Artistic**: An invocation protocol where sounds emerge when "the cosmos permits" rather than on demand.
 
 ## Quick Start
@@ -24,10 +24,10 @@ mkdir -p hibikido-data/{database,index,audio}
 cd hibikido-server
 pip install -e ".[dev]"
 cp sample_config.json config.json
-python -m hibikido.main_server --config config.json
+python -m hibikido.main_server --config config.json --log-level DEBUG
 
 # Add your first sound (via OSC)
-/add_recording "/path/to/audio.wav" "description" "atmospheric drone"
+/add_recording "/path/to/audio.wav" "atmospheric drone"
 
 # Search for it
 /invoke "atmospheric"
@@ -55,10 +55,12 @@ hibikido-project/
 ## Key Features
 
 - **Semantic Search**: Natural language finds sounds by meaning, not filename
-- **Real-time Orchestration**: Frequency conflict resolution prevents harmonic chaos
+- **Real-time Orchestration**: Bark band frequency conflict resolution prevents harmonic chaos
 - **Portable**: Self-contained system with no external database dependencies
 - **OSC Protocol**: Works with Max/MSP, Pure Data, SuperCollider, or any OSC client
 - **Zero Setup**: TinyDB + FAISS, no MongoDB or complex installation
+- **Perceptual Audio Analysis**: 24 Bark frequency bands for harmonic awareness
+- **FIFO Queue System**: All search results queue through orchestrator for manifestation
 
 ## Documentation
 
@@ -84,11 +86,13 @@ Read more: **[Philosophy of Hibikidō](docs/PHILOSOPHY.md)**
 
 ## Technical Overview
 
-- **Server**: Python with TinyDB, FAISS, sentence-transformers, python-osc
+- **Server**: Python with TinyDB, FAISS, sentence-transformers, python-osc, librosa
 - **Interface**: Max/MSP patches with OSC communication
-- **Architecture**: Semantic search → orchestrator queue → frequency conflict resolution → manifestation
-- **Data**: Portable JSON database with neural embedding indices
+- **Architecture**: Semantic search → orchestrator queue → Bark band conflict resolution → manifestation
+- **Data**: Portable JSON database with neural embedding indices and pre-computed Bark band fingerprints
 - **Protocol**: OSC on ports 9000 (listen) / 9001 (send)
+- **AI Models**: sentence-transformers (all-MiniLM-L6-v2) for semantic embeddings
+- **Audio Analysis**: librosa for Bark band extraction and duration calculation
 
 ---
 
