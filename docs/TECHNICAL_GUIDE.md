@@ -115,14 +115,14 @@ Send to the server (default: `127.0.0.1:9000`):
 → Multiple /manifest messages as sounds become available (no completion signal)
 
 /add_recording "forest_01.wav" "morning wind through oak trees"
-→ Simplified syntax: automatic duration calculation and Bark band analysis
-→ Auto-creates full-length segment (0.0-1.0) with 24-band spectral fingerprint
+→ Simplified syntax: automatic duration calculation, Bark band and 3-band onset analysis
+→ Auto-creates full-length segment (0.0-1.0) with 24-band spectral fingerprint and onset times
 
 /add_effect "effects/reverb/cathedral.dll" '{"description":"gothic cathedral reverb"}'
 → Add new effect and auto-create default preset
 
 /add_segment "forest_01.wav" "wind gusts" "start" 0.1 "end" 0.6
-→ Add new segment with timing and duration metadata (Bark bands calculated automatically)
+→ Add new segment with timing and 3-band onset analysis (Bark bands and onset times calculated automatically)
 
 /add_preset "warm cathedral ambience" '{"effect_path":"effects/reverb/cathedral.dll", "parameters":[0.8, 0.3, 0.9]}'
 → Add new effect preset with parameters
@@ -132,6 +132,12 @@ Send to the server (default: `127.0.0.1:9000`):
 
 /stats
 → Database and orchestrator statistics
+
+/list_segments
+→ Show segment IDs and descriptions (first 10)
+
+/visualize 123
+→ Show multi-band onset analysis visualization for segment ID (integer)
 
 /stop
 → Graceful shutdown
@@ -169,7 +175,7 @@ Note: Manifestations arrive over time as the orchestrator permits, following har
 Hibikidō organizes sound through hierarchical relationships using TinyDB:
 
 - **Recordings**: Source audio files with metadata
-- **Segments**: Timestamped slices within recordings with Bark band spectral analysis and duration metadata
+- **Segments**: Timestamped slices within recordings with Bark band spectral analysis, 3-band onset times, and duration metadata
 - **Effects**: Audio processing tools with semantic presets  
 - **Presets**: Effect configurations with parameters
 - **Performances**: Session logs of invocations over time
@@ -283,11 +289,53 @@ similarity = BarkAnalyzer.cosine_similarity(bark_bands1, bark_bands2)
 conflict = similarity > 0.5  # Using default threshold
 ```
 
+### energy_analyzer.py - Multi-Band Onset Detection
+
+The Energy Analyzer performs onset detection across 3 frequency bands to capture percussive transients and attacks in different spectral regions.
+
+**Core Concepts**:
+
+- **3 Frequency Bands**: 
+  - Low-mid (150-2000 Hz): Low-frequency transients, impacts, rumbles, machinery
+  - Mid (500-4000 Hz): Primary onset detection, human vocal range, central activity, most natural sounds
+  - High-mid (2000-8000 Hz): High-frequency transients, clicks, metallic sounds, insects, electronic artifacts
+- **IQR-Based Thresholding**: Adaptive onset detection using Interquartile Range per band
+- **Onset Times Storage**: Arrays of precise onset timestamps for each frequency band
+- **Robust Detection**: Handles varying signal dynamics (quiet passages, sirens, etc.)
+
+**Key Methods**:
+
+- `analyze_energy_data(y, sr, start_time, end_time)`: Extract onset times for 3 bands from audio segment
+- Returns dictionary with `onset_times_low_mid`, `onset_times_mid`, `onset_times_high_mid`, and `duration`
+
+**Usage Example**:
+
+```python
+from hibikido.energy_analyzer import analyze_energy_features
+import librosa
+
+# Load and analyze audio
+y, sr = librosa.load("path/to/audio.wav", sr=32000)
+results = analyze_energy_features(y, sr, start_time=0.0, end_time=10.0)
+
+# Access onset times for each band
+low_onsets = results['onset_times_low_mid']     # List of onset times in seconds
+mid_onsets = results['onset_times_mid']         # List of onset times in seconds  
+high_onsets = results['onset_times_high_mid']   # List of onset times in seconds
+
+print(f"Low-mid band: {len(low_onsets)} onsets")
+print(f"Mid band: {len(mid_onsets)} onsets") 
+print(f"High-mid band: {len(high_onsets)} onsets")
+```
+
 ### tinydb_manager.py - Hierarchical Storage
 
 **Segment Fields for Orchestration**:
 
 - `bark_bands`: Array of 24 normalized energy values for Bark frequency bands (0.0-1.0)
+- `onset_times_low_mid`: Array of onset timestamps for 150-2000 Hz band (seconds)
+- `onset_times_mid`: Array of onset timestamps for 500-4000 Hz band (seconds) 
+- `onset_times_high_mid`: Array of onset timestamps for 2000-8000 Hz band (seconds)
 - `duration`: Sound duration (seconds)
 
 The Bark bands vector enables perceptually-accurate harmonic decisions using cosine similarity.

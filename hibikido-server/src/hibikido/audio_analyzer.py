@@ -44,8 +44,9 @@ class AudioAnalyzer:
                 'duration': float,
                 'bark_bands_raw': List[float],
                 'bark_norm': float,
-                'onset_count': int,
-                'onset_density': float
+                'onset_times_low_mid': List[float],
+                'onset_times_mid': List[float],
+                'onset_times_high_mid': List[float]
             }
         """
         try:
@@ -68,18 +69,18 @@ class AudioAnalyzer:
             
             # Perform energy analysis using the analyzer
             energy_results = self.energy_analyzer.analyze_energy_data(y, sr, start_time, end_time)
-            onset_count = energy_results['onset_count']
-            onset_density = energy_results['onset_density']
+            total_onsets = len(energy_results.get('onset_times_low_mid', [])) + len(energy_results.get('onset_times_mid', [])) + len(energy_results.get('onset_times_high_mid', []))
             
             logger.debug(f"Combined analysis: {duration:.2f}s, Bark norm: {bark_norm:.3f}, "
-                        f"{onset_count} onsets ({onset_density:.1f}/sec)")
+                        f"{total_onsets} total onsets across 3 bands")
             
             return {
                 'duration': duration,
                 'bark_bands_raw': bark_bands_raw,
                 'bark_norm': bark_norm,
-                'onset_count': onset_count,
-                'onset_density': onset_density
+                'onset_times_low_mid': energy_results.get('onset_times_low_mid', []),
+                'onset_times_mid': energy_results.get('onset_times_mid', []),
+                'onset_times_high_mid': energy_results.get('onset_times_high_mid', [])
             }
             
         except Exception as e:
@@ -89,8 +90,9 @@ class AudioAnalyzer:
                 'duration': 0.0,
                 'bark_bands_raw': [0.0] * 24,
                 'bark_norm': 0.0,
-                'onset_count': 0,
-                'onset_density': 0.0
+                'onset_times_low_mid': [],
+                'onset_times_mid': [],
+                'onset_times_high_mid': []
             }
 
 
@@ -121,8 +123,9 @@ class AudioAnalyzer:
                 'duration': 0.0,
                 'bark_bands_raw': [0.0] * 24,
                 'bark_norm': 0.0,
-                'onset_count': 0,
-                'onset_density': 0.0
+                'onset_times_low_mid': [],
+                'onset_times_mid': [],
+                'onset_times_high_mid': []
             }
 
 

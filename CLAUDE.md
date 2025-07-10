@@ -89,6 +89,21 @@ Hibikidō is a semantic audio search system with real-time orchestration using B
 - FAISS index for vector similarity
 - Default model: all-MiniLM-L6-v2
 
+**Energy Analyzer** (`energy_analyzer.py`):
+- Multi-band onset detection using spectral novelty across 3 frequency bands:
+  - Low-mid (150-2000 Hz): Low-frequency transients, impacts, rumbles
+  - Mid (500-4000 Hz): Primary onset detection, human vocal range, central activity
+  - High-mid (2000-8000 Hz): High-frequency transients, clicks, metallic sounds
+- IQR-based adaptive thresholding for robust onset detection per band
+- Handles varying signal dynamics (quiet passages, sirens, etc.)
+- Returns onset times arrays for segments
+
+**Audio Visualizer** (`visualizer.py`):
+- Multi-band onset analysis visualization (Low-mid, Mid, High-mid frequency ranges)
+- Spectrograms with detected onsets overlay
+- Accessible via `/visualize_segment` OSC command
+- Helps debug and understand onset detection behavior
+
 ### Portable Data Structure
 
 The system now uses a fully portable structure with no external dependencies:
@@ -128,8 +143,10 @@ hibikido-project/
 
 ```
 /invoke "ethereal forest breathing"  # Search and queue manifestations
-/add_recording "forest.wav" "description"  # Simplified: auto-analyzes Bark bands and duration
-/add_segment "path" "desc" "start" 0.1 "end" 0.6  # Add timed segment (auto Bark analysis)
+/add_recording "forest.wav" "description"  # Add recording with 3-band onset analysis
+/add_segment "path" "desc" "start" 0.1 "end" 0.6  # Add segment with onset times arrays
+/list_segments  # Show segment IDs and descriptions (first 10)
+/visualize 123  # Show multi-band onset analysis for segment ID (integer)
 /stats  # Database and orchestrator status
 /rebuild_index  # Regenerate embeddings
 ```

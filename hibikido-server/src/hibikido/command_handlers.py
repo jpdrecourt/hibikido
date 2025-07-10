@@ -11,6 +11,7 @@ import logging
 import os
 from typing import Dict, Any
 from .audio_analyzer import analyze_loaded_audio
+from .visualizer import AudioVisualizer
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +27,15 @@ class CommandHandlers:
         self.text_processor = text_processor
         self.osc_handler = osc_handler
         self.orchestrator = orchestrator
+        self.visualizer = AudioVisualizer(config.get('audio', {}).get('sample_rate', 32000))
     
     def handle_invoke(self, unused_addr: str, *args):
-        """Handle invocation requests - queue all results for manifestation."""
+        """
+        Handle invocation requests - queue all results for manifestation.
+        
+        OSC: /invoke "incantation text"
+        Performs semantic search and queues matching segments for orchestrated manifestation.
+        """
         try:
             parsed = self.osc_handler.parse_args(*args)
             incantation = parsed.get('arg1', '').strip()
@@ -133,7 +140,12 @@ class CommandHandlers:
             return "untitled"
     
     def handle_add_recording(self, unused_addr: str, *args):
-        """Handle add recording requests with simplified syntax: /add_recording [file_path] "[description]"."""
+        """
+        Handle add recording requests with 3-band onset analysis.
+        
+        OSC: /add_recording "file_path" "description"
+        Adds recording with auto-generated full-length segment including onset times for 3 bands.
+        """
         logger.info(f"HANDLER ENTRY: handle_add_recording called with {len(args)} args")
         try:
             if len(args) < 2:
@@ -200,17 +212,19 @@ class CommandHandlers:
             # Perform complete analysis only for the segment using already loaded audio
             try:
                 analysis = analyze_loaded_audio(y, sr)
+                total_onsets = len(analysis.get('onset_times_low_mid', [])) + len(analysis.get('onset_times_mid', [])) + len(analysis.get('onset_times_high_mid', []))
                 logger.info(f"Segment analysis: {analysis['duration']:.2f}s, "
                            f"Bark norm: {analysis['bark_norm']:.3f}, "
-                           f"{analysis['onset_count']} onsets ({analysis['onset_density']:.1f}/sec)")
+                           f"{total_onsets} total onsets across 3 bands")
             except Exception as e:
                 logger.warning(f"Segment analysis failed, using defaults: {e}")
                 analysis = {
                     'duration': duration,
                     'bark_bands_raw': [0.0] * 24,
                     'bark_norm': 0.0,
-                    'onset_count': 0,
-                    'onset_density': 0.0
+                    'onset_times_low_mid': [],
+                    'onset_times_mid': [],
+                    'onset_times_high_mid': []
                 }
             
             # Add auto-segment with complete analysis
@@ -225,8 +239,9 @@ class CommandHandlers:
                 bark_bands_raw=analysis['bark_bands_raw'],
                 bark_norm=analysis['bark_norm'],
                 duration=analysis['duration'],
-                onset_count=analysis['onset_count'],
-                onset_density=analysis['onset_density']
+                onset_times_low_mid=analysis.get('onset_times_low_mid', []),
+                onset_times_mid=analysis.get('onset_times_mid', []),
+                onset_times_high_mid=analysis.get('onset_times_high_mid', [])
             )
             
             if segment_success:
@@ -299,7 +314,12 @@ class CommandHandlers:
             self.osc_handler.send_error(error_msg)
 
     def handle_add_segment(self, unused_addr: str, *args):
-        """Handle add segment requests using path, description, and optional metadata pairs."""
+        """
+        Handle add segment requests with onset times analysis.
+        
+        OSC: /add_segment "source_path" "description" ["start" 0.1 "end" 0.6]
+        Adds timed segment with complete Bark band and 3-band onset analysis.
+        """
         try:
             if len(args) < 2:
                 self.osc_handler.send_error(
@@ -358,16 +378,17 @@ class CommandHandlers:
                 abs_end = end * total_duration
                 
                 analysis = analyze_loaded_audio(y, sr, abs_start, abs_end)
-                logger.info(f"Segment analysis: {analysis['onset_count']} onsets, "
-                           f"{analysis['onset_density']:.1f} onsets/sec, "
+                total_onsets = len(analysis.get('onset_times_low_mid', [])) + len(analysis.get('onset_times_mid', [])) + len(analysis.get('onset_times_high_mid', []))
+                logger.info(f"Segment analysis: {total_onsets} total onsets across 3 bands, "
                            f"Bark norm: {analysis['bark_norm']:.3f}")
             except Exception as e:
                 logger.warning(f"Segment analysis failed, using defaults: {e}")
                 analysis = {
                     'bark_bands_raw': [0.0] * 24,
                     'bark_norm': 0.0,
-                    'onset_count': 0,
-                    'onset_density': 0.0
+                    'onset_times_low_mid': [],
+                    'onset_times_mid': [],
+                    'onset_times_high_mid': []
                 }
             
             embedding_text = self.text_processor.create_segment_embedding_text(
@@ -392,8 +413,9 @@ class CommandHandlers:
                 duration=duration,
                 bark_bands_raw=analysis.get('bark_bands_raw'),
                 bark_norm=analysis.get('bark_norm'),
-                onset_count=analysis.get('onset_count'),
-                onset_density=analysis.get('onset_density')
+                onset_times_low_mid=analysis.get('onset_times_low_mid', []),
+                onset_times_mid=analysis.get('onset_times_mid', []),
+                onset_times_high_mid=analysis.get('onset_times_high_mid', [])
             )
             
             if success:
@@ -573,6 +595,110 @@ class CommandHandlers:
                 
         except Exception as e:
             error_msg = f"flush failed: {e}"
+            logger.error(error_msg)
+            self.osc_handler.send_error(error_msg)
+    
+    def handle_visualize(self, unused_addr: str, *args):
+        """
+        Handle segment visualization requests.
+        
+        OSC: /visualize <segment_id>
+        Shows multi-band onset analysis visualization for the specified segment ID (integer).
+        """
+        try:
+            if len(args) < 1:
+                self.osc_handler.send_error("visualize requires segment ID (integer)")
+                return
+                
+            # Directly get integer argument
+            try:
+                segment_id = int(args[0])
+            except (ValueError, TypeError):
+                self.osc_handler.send_error(f"segment ID must be an integer, got: {args[0]}")
+                return
+                
+            logger.info(f"Visualizing segment: {segment_id}")
+            
+            # Get all segments and find the requested one by doc_id
+            segments = self.db_manager.get_all_segments()
+            segment = None
+            
+            for s in segments:
+                if s.doc_id == segment_id:
+                    segment = s
+                    break
+                    
+            if not segment:
+                self.osc_handler.send_error(f"segment {segment_id} not found")
+                return
+                
+            source_path = segment.get('source_path')
+            start_ratio = segment.get('start', 0.0)
+            end_ratio = segment.get('end', 1.0)
+            
+            if not source_path:
+                self.osc_handler.send_error(f"no source_path for segment {segment_id}")
+                return
+                
+            # Resolve full audio path
+            audio_dir = self.config.get('audio_directory', '../hibikido-data/audio')
+            full_audio_path = os.path.join(audio_dir, source_path)
+            
+            # Check if file exists
+            if not os.path.exists(full_audio_path):
+                self.osc_handler.send_error(f"audio file not found: {full_audio_path}")
+                return
+                
+            # Get recording to convert relative times to absolute
+            recording = self.db_manager.get_recording_by_path(source_path)
+            if not recording:
+                self.osc_handler.send_error(f"recording not found for segment {segment_id}")
+                return
+                
+            total_duration = recording.get('duration', 0.0)
+            start_time = start_ratio * total_duration
+            end_time = end_ratio * total_duration
+                
+            # Create visualization
+            self.visualizer.visualize_segment_multiband(full_audio_path, start_time, end_time)
+            
+            self.osc_handler.send_confirm(f"visualized segment {segment_id}")
+            logger.info(f"Successfully visualized segment {segment_id}")
+            
+        except Exception as e:
+            error_msg = f"visualization failed: {e}"
+            logger.error(error_msg)
+            self.osc_handler.send_error(error_msg)
+    
+    def handle_list_segments(self, unused_addr: str, *args):
+        """
+        Handle list segments requests - shows segment IDs and descriptions.
+        
+        OSC: /list_segments
+        Lists first 10 segments with their doc_id, description, and source info.
+        """
+        try:
+            segments = self.db_manager.get_all_segments()
+            
+            if not segments:
+                self.osc_handler.send_confirm("no segments found")
+                return
+                
+            logger.info(f"Found {len(segments)} segments:")
+            for segment in segments[:10]:  # Limit to first 10 to avoid spam
+                desc = segment.get('description', 'No description')[:50]
+                source = segment.get('source_path', 'Unknown')
+                start = segment.get('start', 0.0)
+                end = segment.get('end', 0.0)
+                logger.info(f"  ID {segment.doc_id}: '{desc}' ({source} {start:.1f}s-{end:.1f}s)")
+                
+            if len(segments) > 10:
+                logger.info(f"  ... and {len(segments) - 10} more segments")
+                
+            self.osc_handler.send_confirm(f"listed {min(10, len(segments))} of {len(segments)} segments")
+            
+        except Exception as e:
+            error_msg = f"list segments failed: {e}"
             logger.error(error_msg)
             self.osc_handler.send_error(error_msg)
     

@@ -27,8 +27,9 @@ Expected: Confirmation message with database statistics
 
 **Add a recording:**
 ```
-Send: /add_recording "/path/to/your/audio.wav" "description" "atmospheric drone"
+Send: /add_recording "/path/to/your/audio.wav" "atmospheric drone"
 Expected: "added recording: [path] with auto-segment"
+(Includes automatic Bark band and 3-band onset analysis)
 ```
 
 **Verify content:**
@@ -42,6 +43,15 @@ Expected: "1 segments, 0 presets, 1 searchable"
 Send: /invoke "atmospheric"
 Expected: "invoked: 1 resonances queued"
 Then: /manifest message with audio file details
+```
+
+**Test segment listing and visualization:**
+```
+Send: /list_segments
+Expected: List of segments with IDs and descriptions
+
+Send: /visualize 1
+Expected: Multi-band onset analysis visualization for segment ID 1
 ```
 
 ## Creative Workflow Testing

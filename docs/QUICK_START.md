@@ -62,6 +62,7 @@ Send to 127.0.0.1:9000:
 
 Expected response:  
 /confirm "added recording: your_file.wav with auto-segment"
+(Includes automatic Bark band and 3-band onset analysis)
 ```
 
 ### Test Search
@@ -97,15 +98,22 @@ The `/manifest` message contains:
 ```
 
 ### Add Specific Segments
-For precise timing:
+For precise timing with multi-band onset analysis:
 ```
 /add_segment "your_file.wav" "wind gusts" "start" 0.1 "end" 0.6
 ```
+(Automatically analyzes Bark bands and onset times for the segment)
 
 ### Check Your Database
 ```
 Send: /stats
 Response: /stats_result [recordings] [segments] [effects] [presets] [embeddings] [active_niches] [queued]
+
+Send: /list_segments
+Response: Lists first 10 segments with IDs and descriptions
+
+Send: /visualize 123
+Response: Shows multi-band onset analysis for segment ID 123
 ```
 
 ## Try Different Searches

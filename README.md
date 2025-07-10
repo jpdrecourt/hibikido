@@ -59,7 +59,7 @@ hibikido-project/
 - **Portable**: Self-contained system with no external database dependencies
 - **OSC Protocol**: Works with Max/MSP, Pure Data, SuperCollider, or any OSC client
 - **Zero Setup**: TinyDB + FAISS, no MongoDB or complex installation
-- **Perceptual Audio Analysis**: 24 Bark frequency bands for harmonic awareness
+- **Perceptual Audio Analysis**: 24 Bark frequency bands for harmonic awareness + 3-band onset detection
 - **FIFO Queue System**: All search results queue through orchestrator for manifestation
 
 ## Documentation
@@ -92,7 +92,7 @@ Read more: **[Philosophy of Hibikidō](docs/PHILOSOPHY.md)**
 - **Data**: Portable JSON database with neural embedding indices and pre-computed Bark band fingerprints
 - **Protocol**: OSC on ports 9000 (listen) / 9001 (send)
 - **AI Models**: sentence-transformers (all-MiniLM-L6-v2) for semantic embeddings
-- **Audio Analysis**: librosa for Bark band extraction and duration calculation
+- **Audio Analysis**: librosa for Bark band extraction, 3-band onset detection, and duration calculation
 
 ---
 

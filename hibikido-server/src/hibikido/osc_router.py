@@ -31,6 +31,8 @@ class OSCRouter:
             'stats': command_handlers.handle_stats,
             'free': command_handlers.handle_free,
             'flush': command_handlers.handle_flush,
+            'list_segments': command_handlers.handle_list_segments,
+            'visualize': command_handlers.handle_visualize,
             'stop': command_handlers.handle_stop
         }
         
@@ -53,12 +55,14 @@ class OSCRouter:
         print(f"Sending: {config['osc']['send_ip']}:{config['osc']['send_port']}")
         print("\nOSC Commands:")
         print("  /invoke \"incantation\"           - semantic invocation → manifestations")
-        print("  /add_recording \"path\" \"description\" - add recording with Bark band analysis")
+        print("  /add_recording \"path\" \"description\" - add recording with 3-band onset analysis")
         print("  /add_effect \"path\" metadata     - add new effect with default preset")
-        print("  /add_segment \"path\" \"description\" metadata - add new segment")
+        print("  /add_segment \"path\" \"description\" metadata - add new segment with onset times")
         print("  /add_preset \"text\" metadata     - add new effect preset")
         print("  /rebuild_index                   - rebuild FAISS index from database")
         print("  /stats                           - database and orchestrator statistics")
+        print("  /list_segments                   - show segment IDs and descriptions (first 10)")
+        print("  /visualize <segment_id>          - show multi-band onset analysis for segment")
         print("  /free \"manifestation_id\"        - manually free manifestation niche")
         print("  /flush                           - flush database cache to JSON files")
         print("  /stop                            - shutdown server")
