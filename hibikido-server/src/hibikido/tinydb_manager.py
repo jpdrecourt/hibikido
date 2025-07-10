@@ -415,9 +415,10 @@ class HibikidoDatabase:
             logger.error(f"Failed to get stats: {e}")
             return {}
     
-    def save_all(self) -> bool:
+    def flush_all(self) -> bool:
         """
-        Explicitly save/flush all TinyDB databases to disk.
+        Force TinyDB to flush cached data to JSON files.
+        Useful for debugging to ensure files reflect current state.
         
         Returns:
             True if successful, False otherwise
@@ -432,19 +433,50 @@ class HibikidoDatabase:
                 ("segmentations", self.segmentations_db)
             ]
             
+            flushed_count = 0
             for name, db in databases:
                 if db is not None:
-                    # TinyDB with CachingMiddleware needs explicit close/reopen to flush
-                    db.close()
-                    logger.debug(f"Flushed {name} database")
+                    try:
+                        # Force flush by accessing the storage layer directly
+                        # CachingMiddleware wraps the actual JSONStorage
+                        if hasattr(db.storage, 'flush'):
+                            db.storage.flush()
+                        elif hasattr(db.storage, 'storage'):
+                            # CachingMiddleware has a 'storage' attribute pointing to JSONStorage
+                            # We can force a write by clearing cache
+                            db.storage.flush()
+                        
+                        # Alternative: close and reopen to force flush
+                        file_path = db.storage.storage.path if hasattr(db.storage, 'storage') else None
+                        if file_path:
+                            db.close()
+                            # Immediately reopen
+                            new_db = TinyDB(file_path, storage=CachingMiddleware(JSONStorage))
+                            # Replace the database reference
+                            if name == "recordings":
+                                self.recordings_db = new_db
+                            elif name == "segments":
+                                self.segments_db = new_db
+                            elif name == "effects":
+                                self.effects_db = new_db
+                            elif name == "presets":
+                                self.presets_db = new_db
+                            elif name == "performances":
+                                self.performances_db = new_db
+                            elif name == "segmentations":
+                                self.segmentations_db = new_db
+                        
+                        flushed_count += 1
+                        logger.debug(f"Flushed {name} database")
+                        
+                    except Exception as e:
+                        logger.warning(f"Failed to flush {name} database: {e}")
             
-            # Reconnect all databases
-            self.connect()
-            logger.info("All databases saved and reconnected")
-            return True
+            logger.info(f"Flushed {flushed_count} databases to JSON files")
+            return flushed_count > 0
             
         except Exception as e:
-            logger.error(f"Failed to save databases: {e}")
+            logger.error(f"Failed to flush databases: {e}")
             return False
     
     def close(self):

@@ -551,31 +551,28 @@ class CommandHandlers:
             self.osc_handler.send_error(error_msg)
     
     def handle_save(self, unused_addr: str, *args):
-        """Handle explicit save requests for database and FAISS index."""
+        """Handle explicit database flush to ensure JSON files are up to date."""
         try:
-            logger.info("Saving database and FAISS index...")
+            logger.info("Flushing database to JSON files...")
             
-            # Save database
-            db_saved = self.db_manager.save_all()
+            # Force flush all cached data to JSON files
+            flushed = self.db_manager.flush_all()
             
-            # Save FAISS index
-            index_saved = self.embedding_manager.force_save_index()
-            
-            if db_saved and index_saved:
-                self.osc_handler.send_confirm("saved database and index")
-                logger.info("Database and FAISS index saved successfully")
-            elif db_saved:
-                self.osc_handler.send_error("database saved, index save failed")
-                logger.warning("Database saved but FAISS index save failed")
-            elif index_saved:
-                self.osc_handler.send_error("index saved, database save failed")
-                logger.warning("FAISS index saved but database save failed")
+            if flushed:
+                stats = self.db_manager.get_stats()
+                total_records = (stats.get('recordings', 0) + 
+                               stats.get('segments', 0) + 
+                               stats.get('effects', 0) + 
+                               stats.get('presets', 0))
+                
+                self.osc_handler.send_confirm(f"flushed to disk: {total_records} records")
+                logger.info(f"Successfully flushed {total_records} records to JSON files")
             else:
-                self.osc_handler.send_error("save failed")
-                logger.error("Both database and FAISS index save failed")
+                self.osc_handler.send_error("flush failed")
+                logger.error("Database flush failed")
                 
         except Exception as e:
-            error_msg = f"save failed: {e}"
+            error_msg = f"flush failed: {e}"
             logger.error(error_msg)
             self.osc_handler.send_error(error_msg)
     

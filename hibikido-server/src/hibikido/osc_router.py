@@ -60,7 +60,7 @@ class OSCRouter:
         print("  /rebuild_index                   - rebuild FAISS index from database")
         print("  /stats                           - database and orchestrator statistics")
         print("  /free \"manifestation_id\"        - manually free manifestation niche")
-        print("  /save                            - explicitly save database and FAISS index")
+        print("  /save                            - flush database cache to JSON files")
         print("  /stop                            - shutdown server")
         print("="*70)
         print()
