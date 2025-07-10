@@ -59,30 +59,86 @@ class EnergyAnalyzer:
                 sr=sr
             )
             
-            # Detect onsets from the strength envelope
-            onset_frames = librosa.onset.onset_detect(
-                onset_envelope=onset_strength,
-                sr=sr,
-                units='frames',
-                delta=0.2
-            )
+            # Multi-band onset detection using IQR
+            bands = {
+                'Low-mid (150-2000 Hz)': {'fmin': 150, 'fmax': 2000},
+                'Mid (500-4000 Hz)': {'fmin': 500, 'fmax': 4000},
+                'High-mid (2000-8000 Hz)': {'fmin': 2000, 'fmax': 8000}
+            }
             
-            # TEMPORARY DEBUG VISUALIZATION
+            onset_results = {}
+            for band_name, freq_range in bands.items():
+                # Compute onset strength for this frequency band
+                band_onset_strength = librosa.onset.onset_strength(
+                    y=y_segment,
+                    sr=sr,
+                    fmin=freq_range['fmin'],
+                    fmax=freq_range['fmax']
+                )
+                
+                # Calculate IQR-based delta for this band
+                q75, q25 = np.percentile(band_onset_strength, [75, 25])
+                band_delta = float((q75 - q25) * 0.5)
+                
+                # Detect onsets in this band
+                band_onset_frames = librosa.onset.onset_detect(
+                    onset_envelope=band_onset_strength,
+                    sr=sr,
+                    units='frames',
+                    delta=band_delta
+                )
+                
+                # Convert frames to times
+                band_onset_times = librosa.frames_to_time(band_onset_frames, sr=sr)
+                
+                onset_results[band_name] = {
+                    'frames': band_onset_frames,
+                    'times': band_onset_times,
+                    'strength': band_onset_strength,
+                    'delta': band_delta,
+                    'count': len(band_onset_frames)
+                }
+                
+                logger.debug(f"{band_name}: {len(band_onset_frames)} onsets, delta={band_delta:.3f}")
+            
+            # Use the mid-band results as the main output for compatibility
+            adaptive_delta = onset_results['Mid (500-4000 Hz)']['delta']
+            onset_frames = onset_results['Mid (500-4000 Hz)']['frames']
+            
+            # TEMPORARY DEBUG VISUALIZATION - Multi-band comparison
             try:
-                times = librosa.times_like(onset_strength, sr=sr)
+                fig, axes = plt.subplots(nrows=4, sharex=True, figsize=(14, 12))
+                
+                # Spectrogram on top
                 D = np.abs(librosa.stft(y_segment))
-                fig, ax = plt.subplots(nrows=2, sharex=True, figsize=(12, 8))
                 librosa.display.specshow(librosa.amplitude_to_db(D, ref=np.max),
-                                         x_axis='time', y_axis='log', ax=ax[0], sr=sr)
-                ax[0].set(title='Power spectrogram')
-                ax[0].label_outer()
-                ax[1].plot(times, onset_strength, label='Onset strength')
-                ax[1].vlines(times[onset_frames], 0, onset_strength.max(), color='r', alpha=0.9,
-                           linestyle='--', label='Onsets')
-                ax[1].legend()
+                                         x_axis='time', y_axis='log', ax=axes[0], sr=sr)
+                axes[0].set(title='Power spectrogram')
+                axes[0].label_outer()
+                
+                # Plot each frequency band
+                colors = ['red', 'blue', 'green']
+                for i, (band_name, result) in enumerate(onset_results.items()):
+                    ax = axes[i + 1]
+                    times_band = librosa.times_like(result['strength'], sr=sr)
+                    
+                    ax.plot(times_band, result['strength'], 'gray', alpha=0.7, label='Onset strength')
+                    ax.vlines(result['times'], 0, result['strength'].max(), 
+                             color=colors[i], alpha=0.8, linestyle='--', 
+                             label=f"Onsets ({result['count']})")
+                    ax.set_title(f"{band_name}: δ={result['delta']:.3f}, {result['count']} onsets")
+                    ax.legend()
+                    ax.label_outer()
+                
                 plt.tight_layout()
                 plt.show()
-                logger.info(f"Visualization shown for segment with {len(onset_frames)} onsets")
+                
+                # Log onset times for each band
+                logger.info("Multi-band onset detection results:")
+                for band_name, result in onset_results.items():
+                    times_str = ', '.join([f"{t:.2f}s" for t in result['times']])
+                    logger.info(f"  {band_name}: {result['count']} onsets at [{times_str}]")
+                    
             except Exception as viz_error:
                 logger.warning(f"Visualization failed: {viz_error}")
             

@@ -9,7 +9,9 @@
       "Bash(git checkout:*)",
       "Bash(mkdir:*)",
       "Bash(rg:*)",
-      "Bash(grep:*)"
+      "Bash(grep:*)",
+      "WebFetch(domain:librosa.org)",
+      "Bash(python3:*)"
     ],
     "deny": []
   }
