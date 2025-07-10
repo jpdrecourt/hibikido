@@ -52,13 +52,17 @@ class EnergyAnalyzer:
             if len(y_segment) == 0:
                 raise ValueError(f"Invalid time segment: {start_time}s to {end_time}s")
             
-            # Detect onsets using librosa's robust onset detection
-            onset_frames = librosa.onset.onset_detect(
+            # Compute onset strength using spectral novelty
+            onset_strength = librosa.onset.onset_strength(
                 y=y_segment, 
-                sr=sr, 
-                units='frames',
-                hop_length=512,
-                backtrack=True
+                sr=sr
+            )
+            
+            # Detect onsets from the strength envelope
+            onset_frames = librosa.onset.onset_detect(
+                onset_envelope=onset_strength,
+                sr=sr,
+                units='frames'
             )
             
             onset_count = len(onset_frames)
