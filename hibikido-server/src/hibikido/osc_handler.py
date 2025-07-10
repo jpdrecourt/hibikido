@@ -38,6 +38,7 @@ class OSCHandler:
             'rebuild_index': '/rebuild_index',
             'stats': '/stats',
             'free': '/free',
+            'flush': '/flush',
             'stop': '/stop',
             
             # Output addresses

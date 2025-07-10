@@ -550,7 +550,7 @@ class CommandHandlers:
             logger.error(error_msg)
             self.osc_handler.send_error(error_msg)
     
-    def handle_save(self, unused_addr: str, *args):
+    def handle_flush(self, unused_addr: str, *args):
         """Handle explicit database flush to ensure JSON files are up to date."""
         try:
             logger.info("Flushing database to JSON files...")

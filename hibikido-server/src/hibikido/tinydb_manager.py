@@ -417,8 +417,7 @@ class HibikidoDatabase:
     
     def flush_all(self) -> bool:
         """
-        Force TinyDB to flush cached data to JSON files.
-        Useful for debugging to ensure files reflect current state.
+        Force TinyDB to flush cached data to JSON files using CachingMiddleware.flush().
         
         Returns:
             True if successful, False otherwise
@@ -437,43 +436,31 @@ class HibikidoDatabase:
             for name, db in databases:
                 if db is not None:
                     try:
-                        # Force flush by accessing the storage layer directly
-                        # CachingMiddleware wraps the actual JSONStorage
-                        if hasattr(db.storage, 'flush'):
-                            db.storage.flush()
-                        elif hasattr(db.storage, 'storage'):
-                            # CachingMiddleware has a 'storage' attribute pointing to JSONStorage
-                            # We can force a write by clearing cache
-                            db.storage.flush()
-                        
-                        # Alternative: close and reopen to force flush
-                        file_path = db.storage.storage.path if hasattr(db.storage, 'storage') else None
-                        if file_path:
-                            db.close()
-                            # Immediately reopen
-                            new_db = TinyDB(file_path, storage=CachingMiddleware(JSONStorage))
-                            # Replace the database reference
-                            if name == "recordings":
-                                self.recordings_db = new_db
-                            elif name == "segments":
-                                self.segments_db = new_db
-                            elif name == "effects":
-                                self.effects_db = new_db
-                            elif name == "presets":
-                                self.presets_db = new_db
-                            elif name == "performances":
-                                self.performances_db = new_db
-                            elif name == "segmentations":
-                                self.segmentations_db = new_db
-                        
+                        # Use CachingMiddleware's flush() method
+                        db.storage.flush()
                         flushed_count += 1
-                        logger.debug(f"Flushed {name} database")
+                        logger.debug(f"Flushed {name} database using CachingMiddleware.flush()")
                         
                     except Exception as e:
                         logger.warning(f"Failed to flush {name} database: {e}")
             
-            logger.info(f"Flushed {flushed_count} databases to JSON files")
-            return flushed_count > 0
+            if flushed_count > 0:
+                # Verify by getting stats
+                stats = self.get_stats()
+                total_records = sum([
+                    stats.get('recordings', 0),
+                    stats.get('segments', 0), 
+                    stats.get('effects', 0),
+                    stats.get('presets', 0),
+                    stats.get('performances', 0),
+                    stats.get('segmentations', 0)
+                ])
+                
+                logger.info(f"Successfully flushed {flushed_count} databases to JSON files: {total_records} total records")
+                return True
+            else:
+                logger.error("No databases were flushed")
+                return False
             
         except Exception as e:
             logger.error(f"Failed to flush databases: {e}")
