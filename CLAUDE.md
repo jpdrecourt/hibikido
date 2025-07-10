@@ -173,3 +173,8 @@ The system implements an "invocation protocol" - sounds manifest when "the cosmo
 ## Development Guidelines
 
 - Always ask before starting to implement
+
+## Development Tools
+
+- Use python3 for all Python-based development and scripts
+```

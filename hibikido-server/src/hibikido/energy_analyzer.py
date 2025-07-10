@@ -24,22 +24,21 @@ class EnergyAnalyzer:
         """
         self.sample_rate = sample_rate
         
-    def analyze_onsets(self, audio_path: str, start_time: float = 0.0, 
-                      end_time: Optional[float] = None) -> Dict[str, float]:
+    def analyze_energy_data(self, y: np.ndarray, sr: int, start_time: float = 0.0, 
+                           end_time: Optional[float] = None) -> Dict[str, float]:
         """
-        Analyze onset count and density for an audio segment.
+        Analyze onset count and density for loaded audio data.
         
         Args:
-            audio_path: Path to audio file
+            y: Audio signal array
+            sr: Sample rate
             start_time: Start time in seconds
-            end_time: End time in seconds (None = full file)
+            end_time: End time in seconds (None = full audio)
             
         Returns:
             Dictionary with onset_count, onset_density, and duration
         """
         try:
-            # Load audio
-            y, sr = librosa.load(audio_path, sr=self.sample_rate)
             total_duration = len(y) / sr
             
             # Handle time segment
@@ -75,7 +74,7 @@ class EnergyAnalyzer:
             }
             
         except Exception as e:
-            logger.error(f"Energy analysis failed for {audio_path}: {e}")
+            logger.error(f"Energy analysis failed: {e}")
             # Return safe defaults on failure
             return {
                 'onset_count': 0,
@@ -84,18 +83,19 @@ class EnergyAnalyzer:
             }
 
 
-def analyze_energy_features(audio_path: str, start_time: float = 0.0, 
+def analyze_energy_features(y: np.ndarray, sr: int, start_time: float = 0.0, 
                            end_time: Optional[float] = None) -> Dict[str, float]:
     """
-    Convenience function to analyze energy features of an audio file.
+    Convenience function to analyze energy features of loaded audio data.
     
     Args:
-        audio_path: Path to audio file
+        y: Audio signal array
+        sr: Sample rate
         start_time: Start time in seconds
-        end_time: End time in seconds (None = full file)
+        end_time: End time in seconds (None = full audio)
         
     Returns:
         Dictionary with energy analysis results
     """
-    analyzer = EnergyAnalyzer()
-    return analyzer.analyze_onsets(audio_path, start_time, end_time)
+    analyzer = EnergyAnalyzer(sr)
+    return analyzer.analyze_energy_data(y, sr, start_time, end_time)

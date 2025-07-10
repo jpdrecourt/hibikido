@@ -35,15 +35,16 @@ class BarkAnalyzer:
         self.sample_rate = sample_rate
         self.n_bark_bands = len(self.BARK_FREQUENCIES) - 1  # 24 bands
         
-    def analyze_file(self, audio_path: str, start_time: float = 0.0, 
-                    end_time: Optional[float] = None) -> Tuple[List[float], float]:
+    def analyze_audio_data(self, y: np.ndarray, sr: int, start_time: float = 0.0, 
+                          end_time: Optional[float] = None) -> Tuple[List[float], float]:
         """
-        Analyze audio file and extract Bark band energy vector.
+        Analyze audio data and extract Bark band energy vector.
         
         Args:
-            audio_path: Path to audio file
+            y: Audio signal array
+            sr: Sample rate
             start_time: Start time in seconds (default: 0.0)
-            end_time: End time in seconds (default: None = full file)
+            end_time: End time in seconds (default: None = full audio)
             
         Returns:
             Tuple of (bark_vector, duration) where:
@@ -51,13 +52,9 @@ class BarkAnalyzer:
             - duration: Duration of analyzed segment in seconds
             
         Raises:
-            FileNotFoundError: If audio file doesn't exist
             ValueError: If audio analysis fails
         """
         try:
-            # Load audio file
-            y, sr = librosa.load(audio_path, sr=self.sample_rate)
-            
             # Calculate total duration
             total_duration = len(y) / sr
             
@@ -79,14 +76,14 @@ class BarkAnalyzer:
             # Compute Bark band energies
             bark_vector = self._compute_bark_bands(y_segment, sr)
             
-            logger.debug(f"Analyzed {audio_path}: {segment_duration:.2f}s, "
+            logger.debug(f"Bark analysis: {segment_duration:.2f}s, "
                         f"Bark vector sum: {sum(bark_vector):.3f}")
             
             return bark_vector, segment_duration
             
         except Exception as e:
-            logger.error(f"Failed to analyze {audio_path}: {e}")
-            raise ValueError(f"Audio analysis failed: {e}")
+            logger.error(f"Bark analysis failed: {e}")
+            raise ValueError(f"Bark analysis failed: {e}")
     
     def _compute_bark_bands(self, y: np.ndarray, sr: int) -> List[float]:
         """
@@ -202,18 +199,19 @@ class BarkAnalyzer:
         return float(np.clip(similarity, -1.0, 1.0))
 
 
-def analyze_audio_file(audio_path: str, start_time: float = 0.0, 
+def analyze_bark_bands(y: np.ndarray, sr: int, start_time: float = 0.0, 
                       end_time: Optional[float] = None) -> Tuple[List[float], float]:
     """
-    Convenience function to analyze an audio file.
+    Convenience function to analyze Bark bands from loaded audio data.
     
     Args:
-        audio_path: Path to audio file
+        y: Audio signal array
+        sr: Sample rate
         start_time: Start time in seconds
-        end_time: End time in seconds (None = full file)
+        end_time: End time in seconds (None = full audio)
         
     Returns:
         Tuple of (bark_vector, duration)
     """
-    analyzer = BarkAnalyzer(sample_rate=32000)
-    return analyzer.analyze_file(audio_path, start_time, end_time)
+    analyzer = BarkAnalyzer(sample_rate=sr)
+    return analyzer.analyze_audio_data(y, sr, start_time, end_time)

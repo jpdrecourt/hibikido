@@ -1,5 +1,6 @@
 """
 Combined audio analyzer for Hibikidō - does both Bark and Energy analysis on loaded audio.
+This is the primary interface for all audio analysis operations.
 """
 
 import numpy as np
@@ -7,6 +8,7 @@ import librosa
 from typing import Dict, List, Tuple, Optional
 import logging
 from .bark_analyzer import BarkAnalyzer
+from .energy_analyzer import EnergyAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -23,6 +25,7 @@ class AudioAnalyzer:
         """
         self.sample_rate = sample_rate
         self.bark_analyzer = BarkAnalyzer(sample_rate)
+        self.energy_analyzer = EnergyAnalyzer(sample_rate)
         
     def analyze_audio_data(self, y: np.ndarray, sr: int, start_time: float = 0.0, 
                           end_time: Optional[float] = None) -> Dict:
@@ -59,21 +62,14 @@ class AudioAnalyzer:
             if len(y_segment) == 0:
                 raise ValueError(f"Invalid time segment: {start_time}s to {end_time}s")
             
-            # Perform both analyses on the loaded audio
-            bark_bands_raw = self.bark_analyzer._compute_bark_bands(y_segment, sr)
+            # Perform Bark analysis using the analyzer
+            bark_bands_raw, _ = self.bark_analyzer.analyze_audio_data(y, sr, start_time, end_time)
             bark_norm = BarkAnalyzer.vector_norm(bark_bands_raw)
             
-            # Onset detection
-            onset_frames = librosa.onset.onset_detect(
-                y=y_segment,
-                sr=sr,
-                units='frames',
-                hop_length=512,
-                backtrack=True
-            )
-            
-            onset_count = len(onset_frames)
-            onset_density = onset_count / duration if duration > 0 else 0.0
+            # Perform energy analysis using the analyzer
+            energy_results = self.energy_analyzer.analyze_energy_data(y, sr, start_time, end_time)
+            onset_count = energy_results['onset_count']
+            onset_density = energy_results['onset_density']
             
             logger.debug(f"Combined analysis: {duration:.2f}s, Bark norm: {bark_norm:.3f}, "
                         f"{onset_count} onsets ({onset_density:.1f}/sec)")
@@ -96,6 +92,55 @@ class AudioAnalyzer:
                 'onset_count': 0,
                 'onset_density': 0.0
             }
+
+
+    def analyze_file(self, audio_path: str, start_time: float = 0.0, 
+                    end_time: Optional[float] = None) -> Dict:
+        """
+        Load and analyze an audio file with both Bark and energy analysis.
+        
+        Args:
+            audio_path: Path to audio file
+            start_time: Start time in seconds
+            end_time: End time in seconds (None = full file)
+            
+        Returns:
+            Dictionary with complete analysis results
+        """
+        try:
+            # Load audio file once
+            y, sr = librosa.load(audio_path, sr=self.sample_rate)
+            
+            # Perform combined analysis on loaded data
+            return self.analyze_audio_data(y, sr, start_time, end_time)
+            
+        except Exception as e:
+            logger.error(f"Failed to load and analyze {audio_path}: {e}")
+            # Return safe defaults
+            return {
+                'duration': 0.0,
+                'bark_bands_raw': [0.0] * 24,
+                'bark_norm': 0.0,
+                'onset_count': 0,
+                'onset_density': 0.0
+            }
+
+
+def analyze_audio_file(audio_path: str, start_time: float = 0.0, 
+                      end_time: Optional[float] = None) -> Dict:
+    """
+    Convenience function to load and analyze an audio file with both Bark and energy features.
+    
+    Args:
+        audio_path: Path to audio file
+        start_time: Start time in seconds
+        end_time: End time in seconds (None = full file)
+        
+    Returns:
+        Dictionary with complete analysis results
+    """
+    analyzer = AudioAnalyzer()
+    return analyzer.analyze_file(audio_path, start_time, end_time)
 
 
 def analyze_loaded_audio(y: np.ndarray, sr: int, start_time: float = 0.0, 
