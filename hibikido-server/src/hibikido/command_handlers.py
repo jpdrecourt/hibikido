@@ -10,8 +10,7 @@ import json
 import logging
 import os
 from typing import Dict, Any
-from .bark_analyzer import analyze_audio_file, BarkAnalyzer
-from .energy_analyzer import analyze_energy_features
+from .audio_analyzer import analyze_loaded_audio
 
 logger = logging.getLogger(__name__)
 
@@ -160,25 +159,15 @@ class CommandHandlers:
                 self.osc_handler.send_error(f"audio file not found: {full_audio_path}")
                 return
             
-            # Analyze audio file for duration and Bark bands
+            # Just get basic duration for recording metadata - no analysis yet
             try:
-                bark_bands_raw, duration = analyze_audio_file(full_audio_path)
-                bark_norm = BarkAnalyzer.vector_norm(bark_bands_raw)
-                logger.info(f"Audio analysis: {duration:.2f}s, Bark norm: {bark_norm:.3f}")
+                import librosa
+                y, sr = librosa.load(full_audio_path, sr=22050)
+                duration = len(y) / sr
+                logger.info(f"Recording duration: {duration:.2f}s")
             except Exception as e:
-                self.osc_handler.send_error(f"audio analysis failed: {e}")
+                self.osc_handler.send_error(f"failed to load audio file: {e}")
                 return
-            
-            # Analyze energy features (onset detection)
-            try:
-                energy_features = analyze_energy_features(full_audio_path)
-                onset_count = energy_features['onset_count']
-                onset_density = energy_features['onset_density']
-                logger.info(f"Energy analysis: {onset_count} onsets, {onset_density:.1f} onsets/sec")
-            except Exception as e:
-                logger.warning(f"Energy analysis failed, using defaults: {e}")
-                onset_count = 0
-                onset_density = 0.0
             
             # Prepare metadata
             metadata = {
@@ -196,7 +185,7 @@ class CommandHandlers:
                 self.osc_handler.send_error(f"recording already exists or failed to add: {relative_path}")
                 return
             
-            # Auto-create full-length segment with metadata
+            # Auto-create full-length segment with complete analysis
             segment_description = f"Full recording: {description}"
             
             segment_embedding_text = self.text_processor.create_segment_embedding_text(
@@ -208,7 +197,23 @@ class CommandHandlers:
             # Add embedding
             faiss_id = self.embedding_manager.add_embedding(segment_embedding_text)
             
-            # Add auto-segment with Bark bands, duration, and energy features
+            # Perform complete analysis only for the segment using already loaded audio
+            try:
+                analysis = analyze_loaded_audio(y, sr)
+                logger.info(f"Segment analysis: {analysis['duration']:.2f}s, "
+                           f"Bark norm: {analysis['bark_norm']:.3f}, "
+                           f"{analysis['onset_count']} onsets ({analysis['onset_density']:.1f}/sec)")
+            except Exception as e:
+                logger.warning(f"Segment analysis failed, using defaults: {e}")
+                analysis = {
+                    'duration': duration,
+                    'bark_bands_raw': [0.0] * 24,
+                    'bark_norm': 0.0,
+                    'onset_count': 0,
+                    'onset_density': 0.0
+                }
+            
+            # Add auto-segment with complete analysis
             segment_success = self.db_manager.add_segment(
                 source_path=relative_path,  # Store relative path
                 segmentation_id="auto_full",
@@ -217,11 +222,11 @@ class CommandHandlers:
                 description=segment_description,
                 embedding_text=segment_embedding_text,
                 faiss_index=faiss_id,
-                bark_bands_raw=bark_bands_raw,
-                bark_norm=bark_norm,
-                duration=duration,
-                onset_count=onset_count,
-                onset_density=onset_density
+                bark_bands_raw=analysis['bark_bands_raw'],
+                bark_norm=analysis['bark_norm'],
+                duration=analysis['duration'],
+                onset_count=analysis['onset_count'],
+                onset_density=analysis['onset_density']
             )
             
             if segment_success:
@@ -342,21 +347,28 @@ class CommandHandlers:
             audio_dir = self.config.get('audio_directory', '../hibikido-data/audio')
             full_audio_path = os.path.join(audio_dir, source_path)
             
-            # Analyze energy features for this segment
+            # Load audio once and analyze this segment
             try:
+                import librosa
+                y, sr = librosa.load(full_audio_path, sr=22050)
+                
                 # Convert relative times to absolute for analysis
-                total_duration = recording.get('duration', 1.0)
+                total_duration = recording.get('duration', len(y) / sr)
                 abs_start = start * total_duration
                 abs_end = end * total_duration
                 
-                energy_features = analyze_energy_features(full_audio_path, abs_start, abs_end)
-                onset_count = energy_features['onset_count']
-                onset_density = energy_features['onset_density']
-                logger.info(f"Segment energy analysis: {onset_count} onsets, {onset_density:.1f} onsets/sec")
+                analysis = analyze_loaded_audio(y, sr, abs_start, abs_end)
+                logger.info(f"Segment analysis: {analysis['onset_count']} onsets, "
+                           f"{analysis['onset_density']:.1f} onsets/sec, "
+                           f"Bark norm: {analysis['bark_norm']:.3f}")
             except Exception as e:
-                logger.warning(f"Segment energy analysis failed, using defaults: {e}")
-                onset_count = 0
-                onset_density = 0.0
+                logger.warning(f"Segment analysis failed, using defaults: {e}")
+                analysis = {
+                    'bark_bands_raw': [0.0] * 24,
+                    'bark_norm': 0.0,
+                    'onset_count': 0,
+                    'onset_density': 0.0
+                }
             
             embedding_text = self.text_processor.create_segment_embedding_text(
                 segment={'description': description},
@@ -378,8 +390,10 @@ class CommandHandlers:
                 embedding_text=embedding_text,
                 faiss_index=faiss_id,
                 duration=duration,
-                onset_count=onset_count,
-                onset_density=onset_density
+                bark_bands_raw=analysis.get('bark_bands_raw'),
+                bark_norm=analysis.get('bark_norm'),
+                onset_count=analysis.get('onset_count'),
+                onset_density=analysis.get('onset_density')
             )
             
             if success:
