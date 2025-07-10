@@ -169,3 +169,7 @@ The system implements an "invocation protocol" - sounds manifest when "the cosmo
 ## Principles
 
 - Do not keep backward compatibility, but tell me when a change is breaking.
+
+## Development Guidelines
+
+- Always ask before starting to implement

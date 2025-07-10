@@ -11,6 +11,7 @@ import logging
 import os
 from typing import Dict, Any
 from .bark_analyzer import analyze_audio_file, BarkAnalyzer
+from .energy_analyzer import analyze_energy_features
 
 logger = logging.getLogger(__name__)
 
@@ -168,6 +169,17 @@ class CommandHandlers:
                 self.osc_handler.send_error(f"audio analysis failed: {e}")
                 return
             
+            # Analyze energy features (onset detection)
+            try:
+                energy_features = analyze_energy_features(full_audio_path)
+                onset_count = energy_features['onset_count']
+                onset_density = energy_features['onset_density']
+                logger.info(f"Energy analysis: {onset_count} onsets, {onset_density:.1f} onsets/sec")
+            except Exception as e:
+                logger.warning(f"Energy analysis failed, using defaults: {e}")
+                onset_count = 0
+                onset_density = 0.0
+            
             # Prepare metadata
             metadata = {
                 'description': description,
@@ -196,7 +208,7 @@ class CommandHandlers:
             # Add embedding
             faiss_id = self.embedding_manager.add_embedding(segment_embedding_text)
             
-            # Add auto-segment with Bark bands and duration
+            # Add auto-segment with Bark bands, duration, and energy features
             segment_success = self.db_manager.add_segment(
                 source_path=relative_path,  # Store relative path
                 segmentation_id="auto_full",
@@ -207,7 +219,9 @@ class CommandHandlers:
                 faiss_index=faiss_id,
                 bark_bands_raw=bark_bands_raw,
                 bark_norm=bark_norm,
-                duration=duration
+                duration=duration,
+                onset_count=onset_count,
+                onset_density=onset_density
             )
             
             if segment_success:
@@ -324,6 +338,26 @@ class CommandHandlers:
                 self.osc_handler.send_error(f"recording not found: {source_path}")
                 return
             
+            # Get full audio path for analysis
+            audio_dir = self.config.get('audio_directory', '../hibikido-data/audio')
+            full_audio_path = os.path.join(audio_dir, source_path)
+            
+            # Analyze energy features for this segment
+            try:
+                # Convert relative times to absolute for analysis
+                total_duration = recording.get('duration', 1.0)
+                abs_start = start * total_duration
+                abs_end = end * total_duration
+                
+                energy_features = analyze_energy_features(full_audio_path, abs_start, abs_end)
+                onset_count = energy_features['onset_count']
+                onset_density = energy_features['onset_density']
+                logger.info(f"Segment energy analysis: {onset_count} onsets, {onset_density:.1f} onsets/sec")
+            except Exception as e:
+                logger.warning(f"Segment energy analysis failed, using defaults: {e}")
+                onset_count = 0
+                onset_density = 0.0
+            
             embedding_text = self.text_processor.create_segment_embedding_text(
                 segment={'description': description},
                 recording=recording,
@@ -343,7 +377,9 @@ class CommandHandlers:
                 description=description,
                 embedding_text=embedding_text,
                 faiss_index=faiss_id,
-                duration=duration
+                duration=duration,
+                onset_count=onset_count,
+                onset_density=onset_density
             )
             
             if success:

@@ -134,7 +134,9 @@ class HibikidoDatabase:
                    embedding_text: str, faiss_index: int = None,
                    bark_bands_raw: List[float] = None,
                    bark_norm: float = None,
-                   duration: float = None) -> bool:
+                   duration: float = None,
+                   onset_count: int = None,
+                   onset_density: float = None) -> bool:
         """Add a new segment referencing recording by path."""
         try:
             segment = {
@@ -153,6 +155,10 @@ class HibikidoDatabase:
                 segment["bark_norm"] = bark_norm
             if duration is not None:
                 segment["duration"] = duration
+            if onset_count is not None:
+                segment["onset_count"] = onset_count
+            if onset_density is not None:
+                segment["onset_density"] = onset_density
             
             if faiss_index is not None:
                 segment["FAISS_index"] = faiss_index
