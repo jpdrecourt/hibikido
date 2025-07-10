@@ -78,6 +78,10 @@ class EmbeddingManager:
             logger.error(f"Failed to save FAISS index: {e}")
             return False
     
+    def force_save_index(self) -> bool:
+        """Explicitly save FAISS index to disk."""
+        return self._save_index()
+    
     def add_embedding(self, text: str) -> Optional[int]:
         """
         Add text embedding to FAISS index.

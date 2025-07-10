@@ -30,6 +30,7 @@ class OSCRouter:
             'rebuild_index': command_handlers.handle_rebuild_index,
             'stats': command_handlers.handle_stats,
             'free': command_handlers.handle_free,
+            'save': command_handlers.handle_save,
             'stop': command_handlers.handle_stop
         }
         
@@ -59,6 +60,7 @@ class OSCRouter:
         print("  /rebuild_index                   - rebuild FAISS index from database")
         print("  /stats                           - database and orchestrator statistics")
         print("  /free \"manifestation_id\"        - manually free manifestation niche")
+        print("  /save                            - explicitly save database and FAISS index")
         print("  /stop                            - shutdown server")
         print("="*70)
         print()

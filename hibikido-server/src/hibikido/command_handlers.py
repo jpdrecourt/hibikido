@@ -550,6 +550,35 @@ class CommandHandlers:
             logger.error(error_msg)
             self.osc_handler.send_error(error_msg)
     
+    def handle_save(self, unused_addr: str, *args):
+        """Handle explicit save requests for database and FAISS index."""
+        try:
+            logger.info("Saving database and FAISS index...")
+            
+            # Save database
+            db_saved = self.db_manager.save_all()
+            
+            # Save FAISS index
+            index_saved = self.embedding_manager.force_save_index()
+            
+            if db_saved and index_saved:
+                self.osc_handler.send_confirm("saved database and index")
+                logger.info("Database and FAISS index saved successfully")
+            elif db_saved:
+                self.osc_handler.send_error("database saved, index save failed")
+                logger.warning("Database saved but FAISS index save failed")
+            elif index_saved:
+                self.osc_handler.send_error("index saved, database save failed")
+                logger.warning("FAISS index saved but database save failed")
+            else:
+                self.osc_handler.send_error("save failed")
+                logger.error("Both database and FAISS index save failed")
+                
+        except Exception as e:
+            error_msg = f"save failed: {e}"
+            logger.error(error_msg)
+            self.osc_handler.send_error(error_msg)
+    
     def handle_stop(self, unused_addr: str, *args):
         """Handle stop requests."""
         logger.info("Received stop command")

@@ -415,6 +415,38 @@ class HibikidoDatabase:
             logger.error(f"Failed to get stats: {e}")
             return {}
     
+    def save_all(self) -> bool:
+        """
+        Explicitly save/flush all TinyDB databases to disk.
+        
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            databases = [
+                ("recordings", self.recordings_db),
+                ("segments", self.segments_db), 
+                ("effects", self.effects_db),
+                ("presets", self.presets_db),
+                ("performances", self.performances_db),
+                ("segmentations", self.segmentations_db)
+            ]
+            
+            for name, db in databases:
+                if db is not None:
+                    # TinyDB with CachingMiddleware needs explicit close/reopen to flush
+                    db.close()
+                    logger.debug(f"Flushed {name} database")
+            
+            # Reconnect all databases
+            self.connect()
+            logger.info("All databases saved and reconnected")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Failed to save databases: {e}")
+            return False
+    
     def close(self):
         """Close the database connections."""
         try:
