@@ -8,6 +8,7 @@ import numpy as np
 import librosa
 from typing import Dict, Optional
 import logging
+import matplotlib.pyplot as plt
 
 logger = logging.getLogger(__name__)
 
@@ -62,8 +63,28 @@ class EnergyAnalyzer:
             onset_frames = librosa.onset.onset_detect(
                 onset_envelope=onset_strength,
                 sr=sr,
-                units='frames'
+                units='frames',
+                delta=0.2
             )
+            
+            # TEMPORARY DEBUG VISUALIZATION
+            try:
+                times = librosa.times_like(onset_strength, sr=sr)
+                D = np.abs(librosa.stft(y_segment))
+                fig, ax = plt.subplots(nrows=2, sharex=True, figsize=(12, 8))
+                librosa.display.specshow(librosa.amplitude_to_db(D, ref=np.max),
+                                         x_axis='time', y_axis='log', ax=ax[0], sr=sr)
+                ax[0].set(title='Power spectrogram')
+                ax[0].label_outer()
+                ax[1].plot(times, onset_strength, label='Onset strength')
+                ax[1].vlines(times[onset_frames], 0, onset_strength.max(), color='r', alpha=0.9,
+                           linestyle='--', label='Onsets')
+                ax[1].legend()
+                plt.tight_layout()
+                plt.show()
+                logger.info(f"Visualization shown for segment with {len(onset_frames)} onsets")
+            except Exception as viz_error:
+                logger.warning(f"Visualization failed: {viz_error}")
             
             onset_count = len(onset_frames)
             onset_density = onset_count / duration if duration > 0 else 0.0
