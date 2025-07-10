@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class AudioAnalyzer:
     """Combined analyzer that performs both Bark band and energy analysis on pre-loaded audio."""
     
-    def __init__(self, sample_rate: int = 22050):
+    def __init__(self, sample_rate: int = 32000):
         """
         Initialize combined audio analyzer.
         

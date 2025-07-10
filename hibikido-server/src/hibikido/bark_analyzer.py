@@ -25,7 +25,7 @@ class BarkAnalyzer:
         4400, 5300, 6400, 7700, 9500, 12000, 15500
     ]
     
-    def __init__(self, sample_rate: int = 22050):
+    def __init__(self, sample_rate: int = 32000):
         """
         Initialize Bark analyzer.
         
@@ -215,5 +215,5 @@ def analyze_audio_file(audio_path: str, start_time: float = 0.0,
     Returns:
         Tuple of (bark_vector, duration)
     """
-    analyzer = BarkAnalyzer()
+    analyzer = BarkAnalyzer(sample_rate=32000)
     return analyzer.analyze_file(audio_path, start_time, end_time)

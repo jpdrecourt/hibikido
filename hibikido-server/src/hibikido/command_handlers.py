@@ -162,7 +162,7 @@ class CommandHandlers:
             # Just get basic duration for recording metadata - no analysis yet
             try:
                 import librosa
-                y, sr = librosa.load(full_audio_path, sr=22050)
+                y, sr = librosa.load(full_audio_path, sr=32000)
                 duration = len(y) / sr
                 logger.info(f"Recording duration: {duration:.2f}s")
             except Exception as e:
@@ -350,7 +350,7 @@ class CommandHandlers:
             # Load audio once and analyze this segment
             try:
                 import librosa
-                y, sr = librosa.load(full_audio_path, sr=22050)
+                y, sr = librosa.load(full_audio_path, sr=32000)
                 
                 # Convert relative times to absolute for analysis
                 total_duration = recording.get('duration', len(y) / sr)
