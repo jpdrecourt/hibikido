@@ -10,11 +10,23 @@
 		}
 ,
 		"classnamespace" : "box",
-		"rect" : [ 34.0, 77.0, 1888.0, 1329.0 ],
+		"rect" : [ 34.0, 77.0, 1773.0, 1329.0 ],
 		"gridonopen" : 2,
 		"gridsize" : [ 15.0, 15.0 ],
 		"subpatcher_template" : "Default with Grid",
 		"boxes" : [ 			{
+				"box" : 				{
+					"id" : "obj-24",
+					"maxclass" : "message",
+					"numinlets" : 2,
+					"numoutlets" : 1,
+					"outlettype" : [ "" ],
+					"patching_rect" : [ 12.0, 867.0, 798.0, 22.0 ],
+					"text" : "/add_recording siren-attack.flac \"Rising wail spirals outward like an alarmed cry, insistent and mournful, swelling in waves through open, echoing air.\""
+				}
+
+			}
+, 			{
 				"box" : 				{
 					"id" : "obj-32",
 					"maxclass" : "newobj",
@@ -395,13 +407,13 @@
 , 			{
 				"box" : 				{
 					"id" : "obj-30",
-					"linecount" : 5,
+					"linecount" : 3,
 					"maxclass" : "message",
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 268.0, 1233.0, 962.0, 77.0 ],
-					"text" : "/add_recording Mercado25Abril-006.flac \"Chatter weaves through clinks, rustles, and calls—an open market breathes with layered voices and movement under bright shade.\", /add_recording Panning-trolley-001.flac \"Metal wheels rumble across concrete, shifting in pitch and space, a low mechanical groan trailing movement left to right.\", /add_recording siren-attack.flac \"Rising wail spirals outward like an alarmed cry, insistent and mournful, swelling in waves through open, echoing air.\", /add_recording rowing-001.flac \"Oar plunges and pulls, wood creaks under effort, a watery grunt in rhythm with muscle and glide.\", /add_recording rowing-002.flac \"Quick stroke and wet splash, followed by a resonant hollow groan—body and boat locked in cyclical propulsion.\""
+					"patching_rect" : [ 268.0, 1233.0, 1599.0, 50.0 ],
+					"text" : "/add_recording Mercado25Abril-006.flac \"Chatter weaves through clinks, rustles, and calls—an open market breathes with layered voices and movement under bright shade.\", /add_recording Panning-trolley-001.flac \"Metal wheels rumble across concrete, shifting in pitch and space, a low mechanical groan trailing movement left to right.\", /add_recording rowing-001.flac \"Oar plunges and pulls, wood creaks under effort, a watery grunt in rhythm with muscle and glide.\", /add_recording rowing-002.flac \"Quick stroke and wet splash, followed by a resonant hollow groan—body and boat locked in cyclical propulsion.\""
 				}
 
 			}
@@ -499,7 +511,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 185.0, 774.0, 452.0, 22.0 ],
-					"text" : "bang"
+					"text" : "/visualize_segment 1"
 				}
 
 			}
@@ -548,7 +560,8 @@
 					"outlettype" : [ "", "int", "", "" ],
 					"parameter_enable" : 0,
 					"patching_rect" : [ 41.0, 577.0, 387.0, 66.0 ],
-					"tabmode" : 0
+					"tabmode" : 0,
+					"text" : "/visualize_segment 1"
 				}
 
 			}
@@ -865,6 +878,13 @@
 				"patchline" : 				{
 					"destination" : [ "obj-26", 0 ],
 					"source" : [ "obj-22", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-26", 0 ],
+					"source" : [ "obj-24", 0 ]
 				}
 
 			}
