@@ -73,8 +73,8 @@ class TextProcessor:
                 if rec_desc:
                     contexts.append(("recording", rec_desc, 5))  # Up to 5 words
             
-            # Process and combine
-            final_text = self._combine_contexts(contexts, target_words=15, max_words=20)
+            # Process and combine with expanded limits for poetic preservation
+            final_text = self._combine_contexts(contexts, target_words=25, max_words=30)
             
             logger.debug(f"Segment embedding text: '{final_text}' for {segment.get('_id', 'unknown')}")
             return final_text
@@ -104,8 +104,8 @@ class TextProcessor:
                 if effect_desc:
                     contexts.append(("effect", effect_desc, 8))  # Up to 8 words
             
-            # Process and combine
-            final_text = self._combine_contexts(contexts, target_words=15, max_words=20)
+            # Process and combine with expanded limits for poetic preservation
+            final_text = self._combine_contexts(contexts, target_words=25, max_words=30)
             
             logger.debug(f"Preset embedding text: '{final_text}' for preset in {effect.get('_id', 'unknown') if effect else 'unknown'}")
             return final_text
@@ -115,7 +115,7 @@ class TextProcessor:
             # Fallback to just preset description
             return self._clean_text(preset.get("description", "effect preset"))
     
-    def _combine_contexts(self, contexts: List[tuple], target_words: int = 15, max_words: int = 20) -> str:
+    def _combine_contexts(self, contexts: List[tuple], target_words: int = 25, max_words: int = 30) -> str:
         """
         Combine contexts intelligently, respecting word limits and priorities.
         
@@ -182,21 +182,30 @@ class TextProcessor:
             return self._extract_keywords_simple(text, max_words)
     
     def _extract_keywords_spacy(self, text: str, max_words: int = None) -> List[str]:
-        """Extract keywords using spaCy."""
+        """Extract keywords using spaCy, preserving poetic language."""
         try:
             doc = self.nlp(text.lower())
             
+            # Minimal stop words for poetic preservation
+            minimal_stop_words = {
+                'the', 'a', 'an', 'and', 'or', 'in', 'on', 'at', 'to', 'for', 
+                'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
+                'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
+                'should', 'may', 'might', 'this', 'that', 'these', 'those',
+                # Remove system noise
+                'auto', 'generate', 'segment', 'full', 'recording'
+            }
+            
             keywords = []
             for token in doc:
-                # Skip stop words, punctuation, spaces
-                if (token.is_stop or token.is_punct or token.is_space or 
-                    len(token.text) < 2 or token.text in self.audio_stop_words):
+                # Skip punctuation, spaces, but be more permissive with stop words
+                if (token.is_punct or token.is_space or len(token.text) < 2):
                     continue
                 
-                # Use lemma for better semantic matching
-                lemma = token.lemma_.strip()
-                if lemma and len(lemma) > 1:
-                    keywords.append(lemma)
+                # Use original word form instead of lemma to preserve poetic language
+                word = token.text.strip()
+                if word and word not in minimal_stop_words:
+                    keywords.append(word)
             
             # Remove duplicates while preserving order
             seen = set()
@@ -213,26 +222,28 @@ class TextProcessor:
             return self._extract_keywords_simple(text, max_words)
     
     def _extract_keywords_simple(self, text: str, max_words: int = None) -> List[str]:
-        """Extract keywords using simple text processing."""
-        # Clean and split
-        cleaned = self._clean_text(text)
-        words = cleaned.split()
+        """Extract keywords using simple text processing, preserving poetic flow."""
+        # Clean but preserve word forms (no aggressive cleaning)
+        text = text.lower().strip()
+        # Remove only punctuation, keep word structure
+        text = re.sub(r'[^\w\s]', ' ', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        words = text.split()
         
-        # Simple stop words
-        stop_words = {
-            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 
+        # Minimal stop words - only remove true noise
+        minimal_stop_words = {
+            'the', 'a', 'an', 'and', 'or', 'in', 'on', 'at', 'to', 'for', 
             'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
             'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-            'should', 'may', 'might', 'this', 'that', 'these', 'those'
+            'should', 'may', 'might', 'this', 'that', 'these', 'those',
+            # Remove system noise
+            'auto', 'generate', 'segment', 'full', 'recording'
         }
         
-        # Combine with audio stop words
-        all_stop_words = stop_words | self.audio_stop_words
-        
-        # Filter meaningful words
+        # Filter meaningful words but preserve poetic language
         keywords = []
         for word in words:
-            if len(word) > 2 and word not in all_stop_words:
+            if len(word) > 1 and word not in minimal_stop_words:
                 keywords.append(word)
         
         return keywords[:max_words] if max_words else keywords
