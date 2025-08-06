@@ -108,7 +108,7 @@ class AudioFeatureExtractor:
         spectral_flux_std = float(np.std(spectral_flux))
         
         # Envelope analysis (amplitude dynamics)
-        envelope = np.abs(librosa.util.pad_center(y, len(y)))
+        envelope = np.abs(y)
         envelope_smooth = librosa.util.smooth(envelope, length=int(sr * 0.01))  # 10ms smoothing
         
         # Attack time (time to reach 90% of peak from 10%)
