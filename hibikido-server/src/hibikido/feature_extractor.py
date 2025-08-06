@@ -109,7 +109,12 @@ class AudioFeatureExtractor:
         
         # Envelope analysis (amplitude dynamics)
         envelope = np.abs(y)
-        envelope_smooth = librosa.util.smooth(envelope, length=int(sr * 0.01))  # 10ms smoothing
+        # Simple smoothing using moving average (10ms window)
+        window_length = int(sr * 0.01)
+        if window_length > 1:
+            envelope_smooth = np.convolve(envelope, np.ones(window_length)/window_length, mode='same')
+        else:
+            envelope_smooth = envelope
         
         # Attack time (time to reach 90% of peak from 10%)
         peak_val = np.max(envelope_smooth)
