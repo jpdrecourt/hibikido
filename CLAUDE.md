@@ -24,10 +24,10 @@ hibikido-server --config sample_config.json
 ```bash
 # Run smoke tests (simplified testing approach)
 cd hibikido-server
-python tests/test_smoke.py
+PYTHONPATH=src python3 tests/test_smoke.py
 
-# Or with pytest
-pytest tests/test_smoke.py -v
+# Or with pytest (if installed)
+PYTHONPATH=src pytest tests/test_smoke.py -v
 
 # Manual testing guide
 # See tests/manual_testing.md for creative workflow validation
@@ -115,6 +115,24 @@ Hibikidō is a semantic audio search system with real-time orchestration using B
 - Spectrograms with detected onsets overlay
 - Accessible via `/visualize_segment` OSC command
 - Helps debug and understand onset detection behavior
+
+**Audio Analyzer** (`audio_analyzer.py`):
+- Unified audio analysis interface combining feature extraction and energy analysis
+- Integrates with loaded audio data for comprehensive segment analysis
+- Coordinates between feature extraction, onset detection, and Bark band analysis
+- Used by command handlers for complete audio processing workflows
+
+**Text Processor** (`text_processor.py`):
+- Creates embedding text from structured data for semantic search
+- Combines segment, recording, and segmentation metadata into searchable text
+- Generates preset embedding text from effect and parameter information
+- Ensures consistent text representation across the database
+
+**Component Factory** (`component_factory.py`):
+- Centralized factory for creating and initializing all system components
+- Manages component dependencies and initialization order
+- Provides clean separation between configuration and component creation
+- Ensures all components are properly configured and connected
 
 ### Portable Data Structure
 
