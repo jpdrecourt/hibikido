@@ -14,11 +14,11 @@ graph TD
     D --> E[Chōwasha<br/>Orchestrator]
     E --> F{Bark Band<br/>Similarity?}
     F -->|No Conflict| G[OSC /manifest<br/>Immediate]
-    F -->|Conflict| H[FIFO Queue<br/>Auto-retry]
-    H --> I[Background Check<br/>Every 100ms]
-    I --> J{Niche Free?}
-    J -->|Yes| G
-    J -->|No| H
+    F -->|Conflict| H[FIFO Queue<br/>Event-driven retry]
+    H --> I[Niche Freed?]
+    I -->|Yes| J[Process Queue]
+    J --> G
+    I -->|No| H
 
     style A fill:#e1f5fe,stroke:#01579b,color:#000
     style B fill:#f3e5f5,stroke:#4a148c,color:#000
@@ -53,17 +53,19 @@ sequenceDiagram
 
     Server->>Client: /confirm "N resonances queued"
 
-    Note over Orchestrator: Background thread every 100ms
-    loop Auto-process FIFO queue
-        Queue->>Orchestrator: Next queued manifestation
+    Note over Orchestrator: Event-driven processing
+    loop Process queue on events
+        Queue->>Orchestrator: Process all queued manifestations
 
         alt Niche is free
             Orchestrator->>Client: /manifest [sound data]
             Note over Client: Sound manifests now
         else Niche occupied
-            Orchestrator->>Queue: Return to queue
-            Note over Queue: Wait for harmony
+            Orchestrator->>Queue: Remain in queue
+            Note over Queue: Wait for niche to free
         end
+        
+        Note over Orchestrator: Queue reprocessed when niches freed
     end
 ```
 
@@ -115,14 +117,20 @@ Send to the server (default: `127.0.0.1:9000`):
 → Multiple /manifest messages as sounds become available (no completion signal)
 
 /add_recording "forest_01.wav" "morning wind through oak trees"
-→ Simplified syntax: automatic duration calculation, Bark band and 3-band onset analysis
-→ Auto-creates full-length segment (0.0-1.0) with 24-band spectral fingerprint and onset times
+→ Comprehensive audio analysis: 40+ features + Bark bands + 3-band onset detection
+→ Auto-creates full-length segment (0.0-1.0) with complete feature set
+
+/add_segment "forest_01.wav" "wind gusts" "start" 0.1 "end" 0.6
+→ Create segment with full feature analysis for the specified time range
+
+/generate_description "segment" 123
+→ Generate Claude API description for segment ID 123 based on audio features
+
+/generate_description "recording" 45 "force"
+→ Force regenerate description for recording ID 45 (overwrite existing)
 
 /add_effect "effects/reverb/cathedral.dll" '{"description":"gothic cathedral reverb"}'
 → Add new effect and auto-create default preset
-
-/add_segment "forest_01.wav" "wind gusts" "start" 0.1 "end" 0.6
-→ Add new segment with timing and 3-band onset analysis (Bark bands and onset times calculated automatically)
 
 /add_preset "warm cathedral ambience" '{"effect_path":"effects/reverb/cathedral.dll", "parameters":[0.8, 0.3, 0.9]}'
 → Add new effect preset with parameters
@@ -221,14 +229,13 @@ The orchestrator manages Bark band niches, serving as guardian and mediator betw
 **Key Methods**:
 
 - `queue_manifestation(manifestation_data)`: Queue all search results
-- `update()`: Periodic cleanup and queue processing (called every 100ms)
+- `process_queue()`: Event-driven queue processing (called when niches change)
 - `_find_conflict(bark_bands, now)`: Cosine similarity conflict detection using Bark bands
 - `_process_queue()`: Main manifestation logic - sends `/manifest` when niches free
 
 **Configuration**:
 
 - `bark_similarity_threshold`: 0.5 (50% cosine similarity triggers conflict)
-- `time_precision`: 0.1 (100ms manifestation cycle)
 
 ### main_server.py - Central Recognition
 
@@ -245,7 +252,7 @@ Central command implements the queue paradigm:
 **Key Methods**:
 
 - `_handle_invoke()`: queues all results
-- Background thread runs `orchestrator.update()` every 100ms
+- Event-driven orchestration processes queue when manifestations are added or niches freed
 - Stats include orchestrator metrics
 - All manifestation sending delegated to orchestrator
 
@@ -254,6 +261,79 @@ Central command implements the queue paradigm:
 Uses sentence-transformers for semantic search with FAISS index for vector similarity. Default model: all-MiniLM-L6-v2.
 
 Orchestration happens after semantic search.
+
+### audio_analyzer.py - Unified Analysis Orchestrator
+
+The AudioAnalyzer coordinates all audio analysis components to provide comprehensive feature extraction.
+
+**Components Integrated**:
+- FeatureExtractor: 40+ spectral, temporal, and perceptual features
+- BarkAnalyzer: 24 critical frequency bands for orchestration
+- EnergyAnalyzer: 3-band onset detection for rhythmic analysis
+
+**Key Methods**:
+- `analyze_audio_data(y, sr, start_time, end_time)`: Complete analysis of loaded audio
+- `analyze_file(audio_path, start_time, end_time)`: Load and analyze audio file
+- Returns unified dictionary with all analysis results and comprehensive features
+
+### feature_extractor.py - Comprehensive Audio Features
+
+Extracts 40+ detailed audio characteristics for enhanced semantic search and AI description generation.
+
+**Feature Categories**:
+
+- **Basic Properties**: Duration, sample rate, RMS energy statistics
+- **Spectral Features**: 
+  - Spectral centroid/rolloff/bandwidth (brightness and timbre)
+  - 13 MFCC coefficients (timbral texture)
+  - Chroma features (harmonic content)
+  - Spectral contrast (perceptual sharpness)
+- **Temporal Features**:
+  - Attack/decay times (envelope dynamics)
+  - Sustained levels and dynamic range
+  - Tempo and beat tracking
+  - Onset rate (event density)
+- **Harmonic Analysis**:
+  - Harmonic/percussive separation ratios
+  - Pitch salience (melodic vs textural)
+- **Perceptual Qualities**:
+  - Spectral entropy (chaos vs order)
+  - Spectral irregularity (texture roughness)
+  - Roughness coefficient (sensory dissonance)
+- **Frequency Band Analysis**: Energy distribution across 8 perceptual bands (sub-bass to air)
+
+**Usage Example**:
+```python
+from hibikido.feature_extractor import AudioFeatureExtractor
+
+extractor = AudioFeatureExtractor()
+features = extractor.extract_features("audio.wav", start_time=0.0, end_time=5.0)
+
+# Access specific feature categories
+print(f"Spectral centroid: {features['spectral_centroid_mean']} Hz")
+print(f"Attack time: {features['attack_time']}s")
+print(f"Pitch salience: {features['pitch_salience']}")
+print(f"Dominant band: {features['dominant_frequency_band']}")
+```
+
+### semantic_analyzer.py - AI-Powered Descriptions
+
+Integrates with Claude API to generate poetic, evocative descriptions from technical audio features.
+
+**Core Features**:
+- Converts 40+ audio features into natural language prompts
+- Generates 15-20 word poetic descriptions
+- Configurable via API key in config.json
+- Cost-controlled on-demand generation
+
+**Usage**:
+```python
+from hibikido.semantic_analyzer import SemanticAnalyzer
+
+analyzer = SemanticAnalyzer("your-api-key")
+description = analyzer.generate_description(features)
+# Returns: "ethereal forest breathing with crystalline droplets dancing through misty morning silence"
+```
 
 ### bark_analyzer.py - Perceptual Audio Analysis
 
@@ -330,15 +410,71 @@ print(f"High-mid band: {len(high_onsets)} onsets")
 
 ### tinydb_manager.py - Hierarchical Storage
 
-**Segment Fields for Orchestration**:
+**Enhanced Database Schema**:
 
-- `bark_bands`: Array of 24 normalized energy values for Bark frequency bands (0.0-1.0)
-- `onset_times_low_mid`: Array of onset timestamps for 150-2000 Hz band (seconds)
-- `onset_times_mid`: Array of onset timestamps for 500-4000 Hz band (seconds) 
-- `onset_times_high_mid`: Array of onset timestamps for 2000-8000 Hz band (seconds)
+**Recordings**:
+- `path`: Relative audio file path
+- `description`: User or AI-generated description
+- `features`: Complete 40+ audio feature dictionary
 - `duration`: Sound duration (seconds)
 
-The Bark bands vector enables perceptually-accurate harmonic decisions using cosine similarity.
+**Segments**:
+- `source_path`: Reference to parent recording
+- `description`: User or AI-generated description  
+- `features`: Complete 40+ audio feature dictionary for the segment
+- `bark_bands_raw`: Array of 24 normalized energy values for Bark frequency bands (0.0-1.0)
+- `bark_norm`: L2 norm of bark_bands_raw for cosine similarity
+- `onset_times_low_mid`: Array of onset timestamps for 150-2000 Hz band (seconds)
+- `onset_times_mid`: Array of onset timestamps for 500-4000 Hz band (seconds)
+- `onset_times_high_mid`: Array of onset timestamps for 2000-8000 Hz band (seconds)
+- `duration`: Segment duration (seconds)
+- `FAISS_index`: Index into semantic embedding space
+- `embedding_text`: Text used for semantic search
+
+The comprehensive features enable advanced search capabilities, while Bark bands provide real-time orchestration.
+
+## Batch Processing
+
+For bulk import of audio collections, use the batch processor tool:
+
+### tools/batch_processor.py
+
+**Purpose**: Process directories of audio files and generate OSC commands for bulk import.
+
+**Features**:
+- Recursive audio file discovery (wav, mp3, flac, aiff, m4a, ogg, opus)
+- Comprehensive feature extraction for all files
+- Optional Claude API description generation
+- Generates ready-to-send OSC commands
+- Detailed error logging and progress tracking
+
+**Usage**:
+
+```bash
+# Basic processing (filename-based descriptions)
+python src/hibikido/tools/batch_processor.py /path/to/audio
+
+# With Claude API descriptions
+python src/hibikido/tools/batch_processor.py /path/to/audio \
+  --api-key YOUR_CLAUDE_KEY --generate-descriptions
+
+# Custom output directory
+python src/hibikido/tools/batch_processor.py /path/to/audio \
+  --output-dir /path/to/output
+```
+
+**Output Files**:
+- `hibikido_batch_results.json`: Complete analysis results with features
+- `hibikido_import_commands.osc`: Ready-to-send OSC commands
+- `hibikido_failed_files.log`: Files that failed processing
+
+**Integration Workflow**:
+1. Run batch processor on audio directory
+2. Copy audio files to `hibikido-data/audio/`  
+3. Send OSC commands from generated .osc file to server
+4. Use `/generate_description` commands for individual files as needed
+
+This enables efficient bulk processing while maintaining cost control over AI description generation.
 
 ## Development Patterns
 
@@ -448,12 +584,12 @@ Override defaults with `config.json`:
 ## Performance Characteristics
 
 - **Queue Latency**: ~0.1-1ms per manifestation queued
-- **Manifestation Latency**: 100ms average (depends on conflicts)
+- **Manifestation Latency**: Near-instant when no conflicts, queued until niches free
 - **Memory Overhead**: ~100 bytes per queued manifestation
-- **Queue Processing**: Up to 5 manifestations per 100ms cycle
+- **Queue Processing**: All available manifestations processed per event
 - **Bark Band Analysis**: Pre-computed 24-band spectral analysis for zero-latency orchestration
 - **Cosine Similarity**: Optimized vector comparison using normalized Bark bands
-- **Background Thread**: 100ms manifestation cycle (configurable)
+- **Event-Driven Processing**: Immediate response to queue changes and niche availability
 
 **Orchestration Scalability**: Tested with 50+ simultaneous manifestations and complex spectral overlaps using Bark band similarity detection.
 

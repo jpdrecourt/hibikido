@@ -16,13 +16,16 @@ python -m hibikido.main_server --config config.json
 
 ### Usage Examples
 
-**Add content (simplified syntax):**
+**Add content:**
 ```
 /add_recording "ambient/forest.wav" "ethereal forest breathing"
-# Automatically calculates duration, Bark bands, and 3-band onset analysis, creates full-length segment
+# Performs comprehensive audio analysis (40+ features), creates full-length segment
 
 /add_segment "audio.wav" "wind gusts" "start" 0.1 "end" 0.6
-# Manual segment creation with auto Bark band and onset analysis
+# Manual segment with full feature extraction and analysis
+
+/generate_description "segment" 123
+# Generate Claude API description for segment 123 based on audio features
 ```
 
 **Search:**
@@ -43,8 +46,10 @@ See [Technical Guide](../docs/TECHNICAL_GUIDE.md) for complete OSC protocol refe
 
 This server implements:
 - **Semantic Search**: sentence-transformers + FAISS for neural similarity
+- **Comprehensive Audio Analysis**: 40+ spectral, temporal, and perceptual features
 - **Bark Band Analysis**: Perceptually-accurate 24-band spectral analysis for niche detection
 - **Multi-Band Onset Detection**: 3-band onset analysis for percussive transient detection
+- **AI-Powered Descriptions**: Claude API integration for semantic audio descriptions
 - **Real-time Orchestration**: Cosine similarity conflict resolution using Bark bands
 - **OSC Communication**: Ports 9000 (listen) / 9001 (send)
 - **Portable Storage**: TinyDB JSON files, no external database
@@ -53,10 +58,14 @@ This server implements:
 
 - `main_server.py` - OSC handler and coordination
 - `orchestrator.py` - Bark band niche management and manifestation queue
+- `audio_analyzer.py` - Combined audio analysis orchestrator
+- `feature_extractor.py` - Comprehensive spectral, temporal, and perceptual feature extraction
 - `bark_analyzer.py` - Perceptual audio analysis using 24 Bark frequency bands
 - `energy_analyzer.py` - Multi-band onset detection across 3 frequency ranges
+- `semantic_analyzer.py` - Claude API integration for audio descriptions
 - `tinydb_manager.py` - Database operations and schema
 - `embedding_manager.py` - Neural search and FAISS indexing
+- `tools/batch_processor.py` - Batch processing for audio collections
 
 ## Bark Band Niche Analysis
 
@@ -70,8 +79,7 @@ The orchestrator uses perceptually-accurate **Bark band analysis** for intellige
 ```json
 {
   "orchestrator": {
-    "bark_similarity_threshold": 0.5,  // 50% similarity = conflict
-    "time_precision": 0.1              // 100ms update rate
+    "bark_similarity_threshold": 0.5   // 50% similarity = conflict
   },
   "audio": {
     "audio_directory": "../hibikido-data/audio"  // Relative path resolution
@@ -90,6 +98,33 @@ The energy analyzer performs onset detection across 3 frequency bands to capture
 - **High-mid (2000-8000 Hz)**: High-frequency transients, clicks, metallic sounds, insects, electronic artifacts
 
 Each segment stores arrays of precise onset timestamps for all 3 bands, enabling detailed rhythmic analysis and visualization.
+
+## Comprehensive Audio Analysis
+
+The system extracts 40+ audio features for enhanced semantic search and AI description generation:
+
+**Spectral Features**: MFCC coefficients, spectral centroid/rolloff/bandwidth, chroma features, spectral contrast
+**Temporal Features**: Attack/decay times, sustained levels, dynamic range, onset rate
+**Perceptual Features**: Pitch salience, spectral entropy, roughness coefficient, harmonic/percussive ratios
+**Frequency Band Analysis**: Energy distribution across 8 perceptual frequency bands (sub-bass to air)
+
+These features enable:
+- **Superior Search**: More accurate semantic matching through detailed audio characteristics
+- **AI Descriptions**: Claude API can generate poetic descriptions from technical features
+- **Advanced Filtering**: Search by texture, mood, spectral character, or temporal dynamics
+
+## Batch Processing
+
+For bulk imports:
+```bash
+# Process directory with comprehensive analysis
+python src/hibikido/tools/batch_processor.py /path/to/audio
+
+# Add Claude descriptions
+python src/hibikido/tools/batch_processor.py /path/to/audio --api-key KEY --generate-descriptions
+
+# Outputs OSC commands ready for server import
+```
 
 ---
 

@@ -213,30 +213,15 @@ class CommandHandlers:
             # Add embedding
             faiss_id = self.embedding_manager.add_embedding(segment_embedding_text)
             
-            # Perform complete analysis only for the segment using already loaded audio
-            try:
-                analysis = analyze_loaded_audio(y, sr)
-                total_onsets = len(analysis.get('onset_times_low_mid', [])) + len(analysis.get('onset_times_mid', [])) + len(analysis.get('onset_times_high_mid', []))
-                logger.info(f"Segment analysis: {analysis['duration']:.2f}s, "
-                           f"Bark norm: {analysis['bark_norm']:.3f}, "
-                           f"{total_onsets} total onsets across 3 bands")
-                           
-                # Also store features in recording for future use
-                features = analysis.get('features', {})
-                if features:
-                    self.db_manager.update_recording_features(relative_path, features)
-                           
-            except Exception as e:
-                logger.warning(f"Segment analysis failed, using defaults: {e}")
-                analysis = {
-                    'duration': duration,
-                    'bark_bands_raw': [0.0] * 24,
-                    'bark_norm': 0.0,
-                    'onset_times_low_mid': [],
-                    'onset_times_mid': [],
-                    'onset_times_high_mid': [],
-                    'features': {}
-                }
+            # Perform complete analysis for the segment using already loaded audio
+            analysis = analyze_loaded_audio(y, sr)
+            total_onsets = len(analysis['onset_times_low_mid']) + len(analysis['onset_times_mid']) + len(analysis['onset_times_high_mid'])
+            logger.info(f"Segment analysis: {analysis['duration']:.2f}s, "
+                       f"Bark norm: {analysis['bark_norm']:.3f}, "
+                       f"{total_onsets} total onsets across 3 bands")
+                       
+            # Store features in recording
+            self.db_manager.update_recording_features(relative_path, analysis['features'])
             
             # Add auto-segment with complete analysis including features
             segment_success = self.db_manager.add_segment(
@@ -250,10 +235,10 @@ class CommandHandlers:
                 bark_bands_raw=analysis['bark_bands_raw'],
                 bark_norm=analysis['bark_norm'],
                 duration=analysis['duration'],
-                onset_times_low_mid=analysis.get('onset_times_low_mid', []),
-                onset_times_mid=analysis.get('onset_times_mid', []),
-                onset_times_high_mid=analysis.get('onset_times_high_mid', []),
-                features=analysis.get('features', {})
+                onset_times_low_mid=analysis['onset_times_low_mid'],
+                onset_times_mid=analysis['onset_times_mid'],
+                onset_times_high_mid=analysis['onset_times_high_mid'],
+                features=analysis['features']
             )
             
             if segment_success:
@@ -379,30 +364,19 @@ class CommandHandlers:
             audio_dir = self.config.get('audio_directory', '../hibikido-data/audio')
             full_audio_path = os.path.join(audio_dir, source_path)
             
-            # Load audio once and analyze this segment
-            try:
-                import librosa
-                y, sr = librosa.load(full_audio_path, sr=32000)
-                
-                # Convert relative times to absolute for analysis
-                total_duration = recording.get('duration', len(y) / sr)
-                abs_start = start * total_duration
-                abs_end = end * total_duration
-                
-                analysis = analyze_loaded_audio(y, sr, abs_start, abs_end)
-                total_onsets = len(analysis.get('onset_times_low_mid', [])) + len(analysis.get('onset_times_mid', [])) + len(analysis.get('onset_times_high_mid', []))
-                logger.info(f"Segment analysis: {total_onsets} total onsets across 3 bands, "
-                           f"Bark norm: {analysis['bark_norm']:.3f}")
-            except Exception as e:
-                logger.warning(f"Segment analysis failed, using defaults: {e}")
-                analysis = {
-                    'bark_bands_raw': [0.0] * 24,
-                    'bark_norm': 0.0,
-                    'onset_times_low_mid': [],
-                    'onset_times_mid': [],
-                    'onset_times_high_mid': [],
-                    'features': {}
-                }
+            # Load audio and analyze this segment
+            import librosa
+            y, sr = librosa.load(full_audio_path, sr=32000)
+            
+            # Convert relative times to absolute for analysis
+            total_duration = recording['duration']
+            abs_start = start * total_duration
+            abs_end = end * total_duration
+            
+            analysis = analyze_loaded_audio(y, sr, abs_start, abs_end)
+            total_onsets = len(analysis['onset_times_low_mid']) + len(analysis['onset_times_mid']) + len(analysis['onset_times_high_mid'])
+            logger.info(f"Segment analysis: {total_onsets} total onsets across 3 bands, "
+                       f"Bark norm: {analysis['bark_norm']:.3f}")
             
             embedding_text = self.text_processor.create_segment_embedding_text(
                 segment={'description': description},
@@ -424,12 +398,12 @@ class CommandHandlers:
                 embedding_text=embedding_text,
                 faiss_index=faiss_id,
                 duration=duration,
-                bark_bands_raw=analysis.get('bark_bands_raw'),
-                bark_norm=analysis.get('bark_norm'),
-                onset_times_low_mid=analysis.get('onset_times_low_mid', []),
-                onset_times_mid=analysis.get('onset_times_mid', []),
-                onset_times_high_mid=analysis.get('onset_times_high_mid', []),
-                features=analysis.get('features', {})
+                bark_bands_raw=analysis['bark_bands_raw'],
+                bark_norm=analysis['bark_norm'],
+                onset_times_low_mid=analysis['onset_times_low_mid'],
+                onset_times_mid=analysis['onset_times_mid'],
+                onset_times_high_mid=analysis['onset_times_high_mid'],
+                features=analysis['features']
             )
             
             if success:

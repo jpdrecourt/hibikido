@@ -29,8 +29,7 @@
   
   "orchestrator": {
     "_comment": "Bark band niche management",
-    "bark_similarity_threshold": 0.5,
-    "time_precision": 0.1
+    "bark_similarity_threshold": 0.5
   },
   
   "audio": {
@@ -61,8 +60,7 @@
         "index_file": "../hibikido-data/industrial-textures/index/industrial-textures.index"
       },
       "orchestrator": {
-        "bark_similarity_threshold": 0.4,
-        "time_precision": 0.05
+        "bark_similarity_threshold": 0.4
       }
     },
     

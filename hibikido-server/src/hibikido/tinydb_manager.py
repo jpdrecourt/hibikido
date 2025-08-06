@@ -75,7 +75,7 @@ class HibikidoDatabase:
     
     # RECORDINGS METHODS (path-based)
     
-    def add_recording(self, path: str, metadata: Dict[str, Any] = None) -> bool:
+    def add_recording(self, path: str, metadata: Dict[str, Any]) -> bool:
         """Add a new recording with arbitrary metadata using path as unique identifier."""
         try:
             # Check if already exists
@@ -89,17 +89,8 @@ class HibikidoDatabase:
                 "created_at": datetime.now().isoformat()
             }
             
-            # Add all provided metadata
-            if metadata:
-                recording.update(metadata)
-            
-            # Ensure description exists
-            if "description" not in recording:
-                recording["description"] = f"Recording: {path}"
-                
-            # Ensure duration exists (default 0)
-            if "duration" not in recording:
-                recording["duration"] = 0
+            # Add required metadata (description and duration)
+            recording.update(metadata)
             
             self.recordings_db.insert(recording)
             logger.info(f"Added recording: {path}")
@@ -131,14 +122,14 @@ class HibikidoDatabase:
     
     def add_segment(self, source_path: str, segmentation_id: str,
                    start: float, end: float, description: str,
-                   embedding_text: str, faiss_index: int = None,
-                   bark_bands_raw: List[float] = None,
-                   bark_norm: float = None,
-                   duration: float = None,
-                   onset_times_low_mid: List[float] = None,
-                   onset_times_mid: List[float] = None,
-                   onset_times_high_mid: List[float] = None,
-                   features: Dict[str, Any] = None) -> bool:
+                   embedding_text: str, faiss_index: int,
+                   bark_bands_raw: List[float],
+                   bark_norm: float,
+                   duration: float,
+                   onset_times_low_mid: List[float],
+                   onset_times_mid: List[float],
+                   onset_times_high_mid: List[float],
+                   features: Dict[str, Any]) -> bool:
         """Add a new segment referencing recording by path."""
         try:
             segment = {
@@ -151,23 +142,15 @@ class HibikidoDatabase:
                 "created_at": datetime.now().isoformat()
             }
 
-            if bark_bands_raw is not None:
-                segment["bark_bands_raw"] = bark_bands_raw
-            if bark_norm is not None:
-                segment["bark_norm"] = bark_norm
-            if duration is not None:
-                segment["duration"] = duration
-            if onset_times_low_mid is not None:
-                segment["onset_times_low_mid"] = onset_times_low_mid
-            if onset_times_mid is not None:
-                segment["onset_times_mid"] = onset_times_mid
-            if onset_times_high_mid is not None:
-                segment["onset_times_high_mid"] = onset_times_high_mid
-            if features is not None:
-                segment["features"] = features
-            
-            if faiss_index is not None:
-                segment["FAISS_index"] = faiss_index
+            # All analysis data is required
+            segment["bark_bands_raw"] = bark_bands_raw
+            segment["bark_norm"] = bark_norm
+            segment["duration"] = duration
+            segment["onset_times_low_mid"] = onset_times_low_mid
+            segment["onset_times_mid"] = onset_times_mid
+            segment["onset_times_high_mid"] = onset_times_high_mid
+            segment["features"] = features
+            segment["FAISS_index"] = faiss_index
             
             doc_id = self.segments_db.insert(segment)
             logger.info(f"Added segment: {doc_id} - {description[:50]}")

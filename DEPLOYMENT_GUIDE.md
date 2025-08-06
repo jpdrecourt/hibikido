@@ -114,8 +114,7 @@ hibikido-project/                    # Monorepo root
     "min_score": 0.3
   },
   "orchestrator": {
-    "overlap_threshold": 0.2,
-    "time_precision": 0.1
+    "bark_similarity_threshold": 0.5
   }
 }
 ```

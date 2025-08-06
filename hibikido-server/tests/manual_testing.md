@@ -29,7 +29,7 @@ Expected: Confirmation message with database statistics
 ```
 Send: /add_recording "/path/to/your/audio.wav" "atmospheric drone"
 Expected: "added recording: [path] with auto-segment"
-(Includes automatic Bark band and 3-band onset analysis)
+(Includes comprehensive audio analysis: 40+ features + Bark bands + 3-band onset detection)
 ```
 
 **Verify content:**
@@ -52,17 +52,25 @@ Expected: List of segments with IDs and descriptions
 
 Send: /visualize 1
 Expected: Multi-band onset analysis visualization for segment ID 1
+
+Send: /generate_description "segment" 1
+Expected: "generated description for segment 1" (requires Claude API key in config)
 ```
 
 ## Creative Workflow Testing
 
 ### Sound Library Integration
 1. Add several recordings with varied descriptions
-2. Test different semantic queries:
+2. Test AI-generated descriptions:
+   - Add recordings without descriptions: `/add_recording "path" ""`
+   - Generate descriptions: `/generate_description "segment" [ID]`
+   - Compare AI vs manual descriptions for search quality
+3. Test different semantic queries:
    - Genre terms: "ambient", "industrial", "acoustic"
    - Mood terms: "dark", "ethereal", "energetic"  
    - Technical terms: "drone", "percussive", "harmonic"
-3. Verify manifestations match expectations
+   - Feature-based: "bright", "textural", "rhythmic", "sustained"
+4. Verify manifestations match expectations
 
 ### Orchestration Testing
 1. Add recordings with overlapping frequency ranges
@@ -70,11 +78,30 @@ Expected: Multi-band onset analysis visualization for segment ID 1
 3. Observe manifestation timing and conflict resolution
 4. Verify sounds don't conflict harmonically
 
+### Batch Processing Testing
+1. **Test batch processor:**
+   ```bash
+   python src/hibikido/tools/batch_processor.py /path/to/test/audio
+   ```
+   Expected: Generates .osc file with import commands
+
+2. **Test bulk import:**
+   - Copy audio files to hibikido-data/audio/
+   - Send OSC commands from generated file
+   - Verify all files imported correctly
+
+3. **Test AI descriptions:**
+   ```bash
+   python src/hibikido/tools/batch_processor.py /path/to/audio --api-key KEY --generate-descriptions
+   ```
+   Expected: Generates semantic descriptions for all files
+
 ### Performance Testing
 1. Load a realistic sound library (50-200 files)
 2. Test startup time with large database
 3. Test search responsiveness during performance
 4. Monitor memory usage during extended sessions
+5. Test comprehensive feature extraction performance on various file sizes
 
 ## Troubleshooting Checklist
 

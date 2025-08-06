@@ -64,7 +64,7 @@ Hibikidō is a semantic audio search system with real-time orchestration using B
 **Main Server** (`main_server.py`):
 - OSC communication on ports 9000 (listen) and 9001 (send)
 - Command routing through `OSCRouter` and `CommandHandlers`
-- Background thread runs orchestrator updates every 100ms
+- Event-driven orchestrator processes queue when manifestations are added or niches freed
 
 **Orchestrator** (`orchestrator.py`):
 - Manages Bark band "niches" to prevent spectral conflicts
@@ -147,7 +147,7 @@ hibikido-project/
 
 1. OSC `/invoke "description"` → semantic search
 2. All results queued through orchestrator (no completion signal)
-3. Background thread processes queue every 100ms
+3. Event-driven orchestrator processes queue immediately when manifestations are queued or niches become available
 4. Frequency conflict resolution using logarithmic overlap
 5. `/manifest` messages sent when niches are available
 
@@ -222,6 +222,7 @@ The system implements an "invocation protocol" - sounds manifest when "the cosmo
 ## Principles
 
 - Do not keep backward compatibility, but tell me when a change is breaking.
+- Unless specifically requested, don't keep backwards compatibility
 
 ## Development Guidelines
 

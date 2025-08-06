@@ -84,24 +84,15 @@ class AudioAnalyzer:
                 'duration': duration,
                 'bark_bands_raw': bark_bands_raw,
                 'bark_norm': bark_norm,
-                'onset_times_low_mid': energy_results.get('onset_times_low_mid', []),
-                'onset_times_mid': energy_results.get('onset_times_mid', []),
-                'onset_times_high_mid': energy_results.get('onset_times_high_mid', []),
-                'features': features or {}
+                'onset_times_low_mid': energy_results['onset_times_low_mid'],
+                'onset_times_mid': energy_results['onset_times_mid'],
+                'onset_times_high_mid': energy_results['onset_times_high_mid'],
+                'features': features
             }
             
         except Exception as e:
             logger.error(f"Audio analysis failed: {e}")
-            # Return safe defaults
-            return {
-                'duration': 0.0,
-                'bark_bands_raw': [0.0] * 24,
-                'bark_norm': 0.0,
-                'onset_times_low_mid': [],
-                'onset_times_mid': [],
-                'onset_times_high_mid': [],
-                'features': {}
-            }
+            raise
 
 
     def analyze_file(self, audio_path: str, start_time: float = 0.0, 
@@ -126,16 +117,7 @@ class AudioAnalyzer:
             
         except Exception as e:
             logger.error(f"Failed to load and analyze {audio_path}: {e}")
-            # Return safe defaults
-            return {
-                'duration': 0.0,
-                'bark_bands_raw': [0.0] * 24,
-                'bark_norm': 0.0,
-                'onset_times_low_mid': [],
-                'onset_times_mid': [],
-                'onset_times_high_mid': [],
-                'features': {}
-            }
+            raise
 
 
 def analyze_audio_file(audio_path: str, start_time: float = 0.0, 

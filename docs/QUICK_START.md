@@ -62,7 +62,7 @@ Send to 127.0.0.1:9000:
 
 Expected response:  
 /confirm "added recording: your_file.wav with auto-segment"
-(Includes automatic Bark band and 3-band onset analysis)
+(Includes comprehensive audio analysis: 40+ features + Bark bands + 3-band onset detection)
 ```
 
 ### Test Search
@@ -88,6 +88,8 @@ The `/manifest` message contains:
 ## Adding More Content
 
 ### Batch Add Audio Files
+
+**Option 1: Manual OSC commands**
 ```bash
 # Put audio files in hibikido-data/audio/
 # Then add them via OSC:
@@ -97,12 +99,34 @@ The `/manifest` message contains:
 /add_recording "hibikido-data/audio/synth_pad.wav" "warm analog synthesizer pad"
 ```
 
+**Option 2: Batch processor (recommended for large collections)**
+```bash
+# Process entire directory
+python src/hibikido/tools/batch_processor.py /path/to/audio
+
+# With AI-generated descriptions
+python src/hibikido/tools/batch_processor.py /path/to/audio --api-key YOUR_CLAUDE_KEY --generate-descriptions
+
+# Copy audio files to data directory
+cp /path/to/audio/* hibikido-data/audio/
+
+# Send generated OSC commands (from hibikido_import_commands.osc)
+```
+
 ### Add Specific Segments
-For precise timing with multi-band onset analysis:
+For precise timing with comprehensive analysis:
 ```
 /add_segment "your_file.wav" "wind gusts" "start" 0.1 "end" 0.6
 ```
-(Automatically analyzes Bark bands and onset times for the segment)
+(Automatically extracts 40+ audio features, Bark bands, and onset times for the segment)
+
+### Generate AI Descriptions
+Generate semantic descriptions using Claude API:
+```
+/generate_description "segment" 1
+/generate_description "recording" 2 "force"  # Override existing description
+```
+(Requires Claude API key in config.json)
 
 ### Check Your Database
 ```
@@ -159,8 +183,8 @@ Edit `config.json` to adjust:
 - Search sensitivity (`min_score`)
 - Number of results (`top_k`)  
 - Bark band similarity threshold (`bark_similarity_threshold`)
-- Orchestration timing (`time_precision`)
 - Audio directory path (`audio_directory`)
+- Claude API key for descriptions (`claude_api_key`)
 
 ## Troubleshooting
 
