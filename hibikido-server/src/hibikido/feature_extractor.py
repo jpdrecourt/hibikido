@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class AudioFeatureExtractor:
     """Extracts comprehensive audio features for semantic analysis and storage."""
     
-    def __init__(self, sample_rate: int = 32000):
+    def __init__(self, sample_rate: int = 44100):  # Common default, but dynamically set
         """
         Initialize feature extractor.
         
@@ -39,7 +39,7 @@ class AudioFeatureExtractor:
         """
         try:
             # Load audio
-            y, sr = librosa.load(audio_path, sr=self.sample_rate)
+            y, sr = librosa.load(audio_path, sr=None)  # Preserve original sample rate
             
             # Handle time segment
             if end_time is not None:

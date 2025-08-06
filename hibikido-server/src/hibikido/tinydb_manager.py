@@ -125,7 +125,6 @@ class HibikidoDatabase:
                    embedding_text: str, faiss_index: int,
                    bark_bands_raw: List[float],
                    bark_norm: float,
-                   duration: float,
                    onset_times_low_mid: List[float],
                    onset_times_mid: List[float],
                    onset_times_high_mid: List[float],
@@ -142,10 +141,9 @@ class HibikidoDatabase:
                 "created_at": datetime.now().isoformat()
             }
 
-            # All analysis data is required
+            # All analysis data is required (duration removed - calculated by interface)
             segment["bark_bands_raw"] = bark_bands_raw
             segment["bark_norm"] = bark_norm
-            segment["duration"] = duration
             segment["onset_times_low_mid"] = onset_times_low_mid
             segment["onset_times_mid"] = onset_times_mid
             segment["onset_times_high_mid"] = onset_times_high_mid
@@ -485,20 +483,7 @@ class HibikidoDatabase:
             logger.error(f"Failed to update segment {doc_id} description: {e}")
             return False
     
-    def update_recording_features(self, path: str, features: Dict[str, Any]) -> bool:
-        """Update recording features by path."""
-        try:
-            Q = Query()
-            updated_count = self.recordings_db.update({'features': features}, Q.path == path)
-            if updated_count:
-                logger.info(f"Updated recording {path} features")
-                return True
-            else:
-                logger.warning(f"Recording {path} not found for features update")
-                return False
-        except Exception as e:
-            logger.error(f"Failed to update recording {path} features: {e}")
-            return False
+    # Method removed - recordings no longer store features
     
     def update_segment_features(self, doc_id: int, features: Dict[str, Any]) -> bool:
         """Update segment features by document ID."""

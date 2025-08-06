@@ -25,7 +25,7 @@ class BarkAnalyzer:
         4400, 5300, 6400, 7700, 9500, 12000, 15500
     ]
     
-    def __init__(self, sample_rate: int = 32000):
+    def __init__(self, sample_rate: int = 44100):  # Common default, but dynamically set
         """
         Initialize Bark analyzer.
         

@@ -68,7 +68,7 @@ def test_basic_workflow():
         success = db_manager.add_recording("/test/audio.wav", {"description": "Test sound"})
         assert success, "Adding recording failed"
         
-        # Test adding a segment with all required parameters
+        # Test adding a segment with all required parameters (no duration stored)
         success = db_manager.add_segment(
             source_path="/test/audio.wav",
             segmentation_id="test",
@@ -79,7 +79,6 @@ def test_basic_workflow():
             faiss_index=0,
             bark_bands_raw=[0.1] * 24,
             bark_norm=1.0,
-            duration=1.0,
             onset_times_low_mid=[0.5],
             onset_times_mid=[0.3],
             onset_times_high_mid=[0.8],

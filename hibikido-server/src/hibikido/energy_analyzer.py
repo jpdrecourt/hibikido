@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 class EnergyAnalyzer:
     """Analyzes audio files for energy model features, starting with onset detection."""
     
-    def __init__(self, sample_rate: int = 32000):
+    def __init__(self, sample_rate: int = 44100):  # Common default, but dynamically set
         """
         Initialize energy analyzer.
         

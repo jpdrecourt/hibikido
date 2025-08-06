@@ -28,7 +28,7 @@ class CommandHandlers:
         self.text_processor = text_processor
         self.osc_handler = osc_handler
         self.orchestrator = orchestrator
-        self.visualizer = AudioVisualizer(config.get('audio', {}).get('sample_rate', 32000))
+        self.visualizer = AudioVisualizer(config.get('audio', {}).get('sample_rate', 44100))  # Will use native SR
         # Initialize semantic analyzer with API key from config if available
         api_key = config.get('claude_api_key')
         self.semantic_analyzer = SemanticAnalyzer(api_key) if api_key else None
@@ -175,12 +175,12 @@ class CommandHandlers:
                 self.osc_handler.send_error(f"audio file not found: {full_audio_path}")
                 return
             
-            # Just get basic duration for recording metadata - no analysis yet
+            # Get basic duration for recording metadata - no downsampling, preserve original SR
             try:
                 import librosa
-                y, sr = librosa.load(full_audio_path, sr=32000)
+                y, sr = librosa.load(full_audio_path, sr=None)  # Preserve original sample rate
                 duration = len(y) / sr
-                logger.info(f"Recording duration: {duration:.2f}s")
+                logger.info(f"Recording duration: {duration:.2f}s at {sr}Hz")
             except Exception as e:
                 self.osc_handler.send_error(f"failed to load audio file: {e}")
                 return
@@ -216,14 +216,13 @@ class CommandHandlers:
             # Perform complete analysis for the segment using already loaded audio
             analysis = analyze_loaded_audio(y, sr)
             total_onsets = len(analysis['onset_times_low_mid']) + len(analysis['onset_times_mid']) + len(analysis['onset_times_high_mid'])
-            logger.info(f"Segment analysis: {analysis['duration']:.2f}s, "
+            logger.info(f"Segment analysis: {analysis['duration']:.2f}s at {sr}Hz, "
                        f"Bark norm: {analysis['bark_norm']:.3f}, "
                        f"{total_onsets} total onsets across 3 bands")
                        
-            # Store features in recording
-            self.db_manager.update_recording_features(relative_path, analysis['features'])
+            # No longer storing features in recording - only in segments
             
-            # Add auto-segment with complete analysis including features
+            # Add auto-segment with complete analysis including features (no duration stored)
             segment_success = self.db_manager.add_segment(
                 source_path=relative_path,  # Store relative path
                 segmentation_id="auto_full",
@@ -234,7 +233,6 @@ class CommandHandlers:
                 faiss_index=faiss_id,
                 bark_bands_raw=analysis['bark_bands_raw'],
                 bark_norm=analysis['bark_norm'],
-                duration=analysis['duration'],
                 onset_times_low_mid=analysis['onset_times_low_mid'],
                 onset_times_mid=analysis['onset_times_mid'],
                 onset_times_high_mid=analysis['onset_times_high_mid'],
@@ -364,9 +362,9 @@ class CommandHandlers:
             audio_dir = self.config.get('audio_directory', '../hibikido-data/audio')
             full_audio_path = os.path.join(audio_dir, source_path)
             
-            # Load audio and analyze this segment
+            # Load audio and analyze this segment - preserve original sample rate
             import librosa
-            y, sr = librosa.load(full_audio_path, sr=32000)
+            y, sr = librosa.load(full_audio_path, sr=None)
             
             # Convert relative times to absolute for analysis
             total_duration = recording['duration']

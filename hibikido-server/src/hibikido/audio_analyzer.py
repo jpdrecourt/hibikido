@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class AudioAnalyzer:
     """Combined analyzer that performs both Bark band and energy analysis on pre-loaded audio."""
     
-    def __init__(self, sample_rate: int = 32000):
+    def __init__(self, sample_rate: int = 44100):  # Common default, but dynamically set
         """
         Initialize combined audio analyzer.
         
@@ -110,7 +110,7 @@ class AudioAnalyzer:
         """
         try:
             # Load audio file once
-            y, sr = librosa.load(audio_path, sr=self.sample_rate)
+            y, sr = librosa.load(audio_path, sr=None)  # Preserve original sample rate
             
             # Perform combined analysis on loaded data
             return self.analyze_audio_data(y, sr, start_time, end_time)
