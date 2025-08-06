@@ -38,6 +38,9 @@
     "audio_directory": "../hibikido-data/audio"
   },
   
+  "claude_api_key": "your-anthropic-api-key-here",
+  "_claude_comment": "Optional: Anthropic API key for semantic description generation",
+  
   "_examples": {
     "_comment": "Example configurations for different sound collections",
     

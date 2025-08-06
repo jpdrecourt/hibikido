@@ -137,7 +137,8 @@ class HibikidoDatabase:
                    duration: float = None,
                    onset_times_low_mid: List[float] = None,
                    onset_times_mid: List[float] = None,
-                   onset_times_high_mid: List[float] = None) -> bool:
+                   onset_times_high_mid: List[float] = None,
+                   features: Dict[str, Any] = None) -> bool:
         """Add a new segment referencing recording by path."""
         try:
             segment = {
@@ -162,6 +163,8 @@ class HibikidoDatabase:
                 segment["onset_times_mid"] = onset_times_mid
             if onset_times_high_mid is not None:
                 segment["onset_times_high_mid"] = onset_times_high_mid
+            if features is not None:
+                segment["features"] = features
             
             if faiss_index is not None:
                 segment["FAISS_index"] = faiss_index
@@ -469,6 +472,66 @@ class HibikidoDatabase:
             logger.error(f"Failed to flush databases: {e}")
             return False
     
+    def update_recording_description(self, doc_id: int, description: str) -> bool:
+        """Update recording description by document ID."""
+        try:
+            Q = Query()
+            updated_count = self.recordings_db.update({'description': description}, doc_id=doc_id)
+            if updated_count:
+                logger.info(f"Updated recording {doc_id} description")
+                return True
+            else:
+                logger.warning(f"Recording {doc_id} not found for description update")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update recording {doc_id} description: {e}")
+            return False
+    
+    def update_segment_description(self, doc_id: int, description: str) -> bool:
+        """Update segment description by document ID."""
+        try:
+            Q = Query()
+            updated_count = self.segments_db.update({'description': description}, doc_id=doc_id)
+            if updated_count:
+                logger.info(f"Updated segment {doc_id} description")
+                return True
+            else:
+                logger.warning(f"Segment {doc_id} not found for description update")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update segment {doc_id} description: {e}")
+            return False
+    
+    def update_recording_features(self, path: str, features: Dict[str, Any]) -> bool:
+        """Update recording features by path."""
+        try:
+            Q = Query()
+            updated_count = self.recordings_db.update({'features': features}, Q.path == path)
+            if updated_count:
+                logger.info(f"Updated recording {path} features")
+                return True
+            else:
+                logger.warning(f"Recording {path} not found for features update")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update recording {path} features: {e}")
+            return False
+    
+    def update_segment_features(self, doc_id: int, features: Dict[str, Any]) -> bool:
+        """Update segment features by document ID."""
+        try:
+            Q = Query()
+            updated_count = self.segments_db.update({'features': features}, doc_id=doc_id)
+            if updated_count:
+                logger.info(f"Updated segment {doc_id} features")
+                return True
+            else:
+                logger.warning(f"Segment {doc_id} not found for features update")
+                return False
+        except Exception as e:
+            logger.error(f"Failed to update segment {doc_id} features: {e}")
+            return False
+
     def close(self):
         """Close the database connections."""
         try:

@@ -98,6 +98,18 @@ Hibikidō is a semantic audio search system with real-time orchestration using B
 - Handles varying signal dynamics (quiet passages, sirens, etc.)
 - Returns onset times arrays for segments
 
+**Feature Extractor** (`feature_extractor.py`):
+- Comprehensive spectral, temporal, and perceptual audio analysis
+- 40+ features including MFCCs, spectral descriptors, envelope dynamics, frequency band energies
+- Perceptual qualities: pitch salience, spectral entropy, roughness coefficient
+- Optimized for semantic description generation and advanced search
+
+**Semantic Analyzer** (`semantic_analyzer.py`):
+- Claude API integration for poetic audio descriptions
+- Converts technical features into evocative natural language
+- Configurable via API key in config.json
+- On-demand generation to control API costs
+
 **Audio Visualizer** (`visualizer.py`):
 - Multi-band onset analysis visualization (Low-mid, Mid, High-mid frequency ranges)
 - Spectrograms with detected onsets overlay
@@ -143,8 +155,10 @@ hibikido-project/
 
 ```
 /invoke "ethereal forest breathing"  # Search and queue manifestations
-/add_recording "forest.wav" "description"  # Add recording with 3-band onset analysis
-/add_segment "path" "desc" "start" 0.1 "end" 0.6  # Add segment with onset times arrays
+/add_recording "forest.wav" "description"  # Add recording with comprehensive feature analysis
+/add_segment "path" "desc" "start" 0.1 "end" 0.6  # Add segment with full analysis
+/generate_description "segment" 123  # Generate Claude description for segment 123
+/generate_description "recording" 45 "force"  # Force regenerate description
 /list_segments  # Show segment IDs and descriptions (first 10)
 /visualize 123  # Show multi-band onset analysis for segment ID (integer)
 /stats  # Database and orchestrator status
@@ -160,6 +174,7 @@ Configuration via `config.json` (see `sample_config.json`):
 - Search parameters (top_k, min_score)
 - Orchestrator settings (bark_similarity_threshold, time_precision)
 - Audio directory for relative path resolution
+- Claude API key for semantic description generation (optional)
 
 ### Testing Strategy
 
@@ -170,6 +185,27 @@ Simplified testing approach for artistic project:
 
 Manual testing during creative sessions is prioritized over automated tests.
 For personal artistic tools, functional validation matters more than test coverage.
+
+### Batch Processing
+
+For bulk import of audio collections:
+
+```bash
+# Process directory without descriptions (uses filename-based descriptions)
+python src/hibikido/tools/batch_processor.py /path/to/audio
+
+# Process with automatic Claude-generated descriptions
+python src/hibikido/tools/batch_processor.py /path/to/audio \
+  --api-key YOUR_CLAUDE_KEY --generate-descriptions
+
+# Outputs hibikido_import_commands.osc with ready-to-send OSC commands
+```
+
+The batch processor:
+- Extracts comprehensive audio features from all files
+- Optionally generates semantic descriptions via Claude API
+- Creates OSC commands for bulk import
+- Handles failed files gracefully with detailed logging
 
 ### Development Patterns
 

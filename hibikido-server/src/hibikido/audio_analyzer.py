@@ -9,6 +9,7 @@ from typing import Dict, List, Tuple, Optional
 import logging
 from .bark_analyzer import BarkAnalyzer
 from .energy_analyzer import EnergyAnalyzer
+from .feature_extractor import AudioFeatureExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +27,7 @@ class AudioAnalyzer:
         self.sample_rate = sample_rate
         self.bark_analyzer = BarkAnalyzer(sample_rate)
         self.energy_analyzer = EnergyAnalyzer(sample_rate)
+        self.feature_extractor = AudioFeatureExtractor(sample_rate)
         
     def analyze_audio_data(self, y: np.ndarray, sr: int, start_time: float = 0.0, 
                           end_time: Optional[float] = None) -> Dict:
@@ -46,7 +48,8 @@ class AudioAnalyzer:
                 'bark_norm': float,
                 'onset_times_low_mid': List[float],
                 'onset_times_mid': List[float],
-                'onset_times_high_mid': List[float]
+                'onset_times_high_mid': List[float],
+                'features': Dict  # Comprehensive audio features
             }
         """
         try:
@@ -71,6 +74,9 @@ class AudioAnalyzer:
             energy_results = self.energy_analyzer.analyze_energy_data(y, sr, start_time, end_time)
             total_onsets = len(energy_results.get('onset_times_low_mid', [])) + len(energy_results.get('onset_times_mid', [])) + len(energy_results.get('onset_times_high_mid', []))
             
+            # Extract comprehensive features
+            features = self.feature_extractor.extract_features_from_audio(y_segment, sr)
+            
             logger.debug(f"Combined analysis: {duration:.2f}s, Bark norm: {bark_norm:.3f}, "
                         f"{total_onsets} total onsets across 3 bands")
             
@@ -80,7 +86,8 @@ class AudioAnalyzer:
                 'bark_norm': bark_norm,
                 'onset_times_low_mid': energy_results.get('onset_times_low_mid', []),
                 'onset_times_mid': energy_results.get('onset_times_mid', []),
-                'onset_times_high_mid': energy_results.get('onset_times_high_mid', [])
+                'onset_times_high_mid': energy_results.get('onset_times_high_mid', []),
+                'features': features or {}
             }
             
         except Exception as e:
@@ -92,7 +99,8 @@ class AudioAnalyzer:
                 'bark_norm': 0.0,
                 'onset_times_low_mid': [],
                 'onset_times_mid': [],
-                'onset_times_high_mid': []
+                'onset_times_high_mid': [],
+                'features': {}
             }
 
 
@@ -125,7 +133,8 @@ class AudioAnalyzer:
                 'bark_norm': 0.0,
                 'onset_times_low_mid': [],
                 'onset_times_mid': [],
-                'onset_times_high_mid': []
+                'onset_times_high_mid': [],
+                'features': {}
             }
 
 

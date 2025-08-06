@@ -12,6 +12,7 @@ import os
 from typing import Dict, Any
 from .audio_analyzer import analyze_loaded_audio
 from .visualizer import AudioVisualizer
+from .semantic_analyzer import SemanticAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +29,9 @@ class CommandHandlers:
         self.osc_handler = osc_handler
         self.orchestrator = orchestrator
         self.visualizer = AudioVisualizer(config.get('audio', {}).get('sample_rate', 32000))
+        # Initialize semantic analyzer with API key from config if available
+        api_key = config.get('claude_api_key')
+        self.semantic_analyzer = SemanticAnalyzer(api_key) if api_key else None
     
     def handle_invoke(self, unused_addr: str, *args):
         """
@@ -181,7 +185,7 @@ class CommandHandlers:
                 self.osc_handler.send_error(f"failed to load audio file: {e}")
                 return
             
-            # Prepare metadata
+            # Prepare metadata (no features yet - will be added in segment analysis)
             metadata = {
                 'description': description,
                 'duration': duration
@@ -216,6 +220,12 @@ class CommandHandlers:
                 logger.info(f"Segment analysis: {analysis['duration']:.2f}s, "
                            f"Bark norm: {analysis['bark_norm']:.3f}, "
                            f"{total_onsets} total onsets across 3 bands")
+                           
+                # Also store features in recording for future use
+                features = analysis.get('features', {})
+                if features:
+                    self.db_manager.update_recording_features(relative_path, features)
+                           
             except Exception as e:
                 logger.warning(f"Segment analysis failed, using defaults: {e}")
                 analysis = {
@@ -224,10 +234,11 @@ class CommandHandlers:
                     'bark_norm': 0.0,
                     'onset_times_low_mid': [],
                     'onset_times_mid': [],
-                    'onset_times_high_mid': []
+                    'onset_times_high_mid': [],
+                    'features': {}
                 }
             
-            # Add auto-segment with complete analysis
+            # Add auto-segment with complete analysis including features
             segment_success = self.db_manager.add_segment(
                 source_path=relative_path,  # Store relative path
                 segmentation_id="auto_full",
@@ -241,7 +252,8 @@ class CommandHandlers:
                 duration=analysis['duration'],
                 onset_times_low_mid=analysis.get('onset_times_low_mid', []),
                 onset_times_mid=analysis.get('onset_times_mid', []),
-                onset_times_high_mid=analysis.get('onset_times_high_mid', [])
+                onset_times_high_mid=analysis.get('onset_times_high_mid', []),
+                features=analysis.get('features', {})
             )
             
             if segment_success:
@@ -388,7 +400,8 @@ class CommandHandlers:
                     'bark_norm': 0.0,
                     'onset_times_low_mid': [],
                     'onset_times_mid': [],
-                    'onset_times_high_mid': []
+                    'onset_times_high_mid': [],
+                    'features': {}
                 }
             
             embedding_text = self.text_processor.create_segment_embedding_text(
@@ -415,7 +428,8 @@ class CommandHandlers:
                 bark_norm=analysis.get('bark_norm'),
                 onset_times_low_mid=analysis.get('onset_times_low_mid', []),
                 onset_times_mid=analysis.get('onset_times_mid', []),
-                onset_times_high_mid=analysis.get('onset_times_high_mid', [])
+                onset_times_high_mid=analysis.get('onset_times_high_mid', []),
+                features=analysis.get('features', {})
             )
             
             if success:
@@ -699,6 +713,110 @@ class CommandHandlers:
             
         except Exception as e:
             error_msg = f"list segments failed: {e}"
+            logger.error(error_msg)
+            self.osc_handler.send_error(error_msg)
+    
+    def handle_generate_description(self, unused_addr: str, *args):
+        """
+        Handle generate description requests.
+        
+        OSC: /generate_description "recording" <id> ["force"]
+        OSC: /generate_description "segment" <id> ["force"]
+        Generates semantic description using Claude API for recording or segment.
+        """
+        try:
+            if not self.semantic_analyzer:
+                self.osc_handler.send_error("Claude API key not configured")
+                return
+                
+            if len(args) < 2:
+                self.osc_handler.send_error("generate_description requires type (recording/segment) and ID")
+                return
+                
+            item_type = str(args[0]).strip().lower()
+            try:
+                item_id = int(args[1])
+            except (ValueError, TypeError):
+                self.osc_handler.send_error(f"ID must be an integer, got: {args[1]}")
+                return
+                
+            force = len(args) > 2 and str(args[2]).strip().lower() == "force"
+            
+            if item_type not in ["recording", "segment"]:
+                self.osc_handler.send_error("type must be 'recording' or 'segment'")
+                return
+            
+            # Get the item from database
+            if item_type == "recording":
+                recordings = self.db_manager.get_all_recordings()
+                item = None
+                for r in recordings:
+                    if r.doc_id == item_id:
+                        item = r
+                        break
+                if not item:
+                    self.osc_handler.send_error(f"recording {item_id} not found")
+                    return
+            else:  # segment
+                segments = self.db_manager.get_all_segments()
+                item = None
+                for s in segments:
+                    if s.doc_id == item_id:
+                        item = s
+                        break
+                if not item:
+                    self.osc_handler.send_error(f"segment {item_id} not found")
+                    return
+            
+            # Check if description already exists
+            existing_description = item.get('description', '').strip()
+            if existing_description and not force:
+                self.osc_handler.send_error(f"{item_type} {item_id} already has description (use 'force' to override)")
+                return
+            
+            # Get features for description generation
+            features = item.get('features', {})
+            if not features:
+                self.osc_handler.send_error(f"no features available for {item_type} {item_id}")
+                return
+            
+            # Generate description
+            logger.info(f"Generating description for {item_type} {item_id}...")
+            description = self.semantic_analyzer.generate_description(features)
+            
+            if not description:
+                self.osc_handler.send_error("description generation failed")
+                return
+            
+            # Update database
+            if item_type == "recording":
+                success = self.db_manager.update_recording_description(item_id, description)
+            else:  # segment
+                success = self.db_manager.update_segment_description(item_id, description)
+                # Also update embedding if this is a segment
+                if success:
+                    # Regenerate embedding text with new description
+                    if item_type == "segment":
+                        recording = self.db_manager.get_recording_by_path(item.get('source_path'))
+                        if recording:
+                            new_embedding_text = self.text_processor.create_segment_embedding_text(
+                                segment={'description': description},
+                                recording=recording,
+                                segmentation={'description': f"Manual segmentation: {item.get('segmentation_id', 'unknown')}"}
+                            )
+                            # Update the embedding in FAISS
+                            faiss_index = item.get('faiss_index')
+                            if faiss_index is not None:
+                                self.embedding_manager.update_embedding(faiss_index, new_embedding_text)
+            
+            if success:
+                self.osc_handler.send_confirm(f"generated description for {item_type} {item_id}")
+                logger.info(f"Generated description for {item_type} {item_id}: '{description}'")
+            else:
+                self.osc_handler.send_error("failed to update database")
+            
+        except Exception as e:
+            error_msg = f"generate_description failed: {e}"
             logger.error(error_msg)
             self.osc_handler.send_error(error_msg)
     
