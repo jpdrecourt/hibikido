@@ -39,6 +39,9 @@ class OSCHandler:
             'stats': '/stats',
             'free': '/free',
             'flush': '/flush',
+            'list_segments': '/list_segments',
+            'visualize': '/visualize',
+            'generate_description': '/generate_description',
             'stop': '/stop',
             
             # Output addresses

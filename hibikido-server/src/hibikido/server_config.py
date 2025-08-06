@@ -45,7 +45,7 @@ def get_default_config() -> Dict[str, Any]:
 def load_config(config_file: str) -> Dict[str, Any]:
     """Load configuration from JSON file."""
     try:
-        with open(config_file, 'r') as f:
+        with open(config_file, 'r', encoding='utf-8') as f:
             return json.load(f)
     except Exception as e:
         logger.error(f"Failed to load config file {config_file}: {e}")
