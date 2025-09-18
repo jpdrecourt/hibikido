@@ -1,265 +1,165 @@
 """
-Text Processor for Hibikidō (Updated)
-=====================================
+Text Processor for Hibikidō (Simplified)
+========================================
 
-Creates optimized embedding text from hierarchical context.
+Minimal processing for embedding text from hierarchical context.
+Designed for prompt-engineered descriptions with all-MiniLM-L6-v2.
 Priority: segment > segmentation > recording (local > broader)
-Target: 15 words, hard limit: 20 words
 """
 
 import re
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, Optional
 import logging
 
 logger = logging.getLogger(__name__)
 
-# Try to import spaCy, fallback to simple processing if not available
-try:
-    import spacy
-    SPACY_AVAILABLE = True
-    logger.info("spaCy available for text processing")
-except ImportError:
-    SPACY_AVAILABLE = False
-    logger.info("spaCy not available, using simple text processing")
-
 class TextProcessor:
-    def __init__(self):
-        self.nlp = None
+    def __init__(self, max_chars: int = 400):
+        """
+        Initialize with character limit instead of word limit.
         
-        # Initialize spaCy if available
-        if SPACY_AVAILABLE:
-            try:
-                self.nlp = spacy.load("en_core_web_sm")
-                logger.info("spaCy model loaded successfully")
-            except OSError:
-                logger.warning("spaCy model 'en_core_web_sm' not found, falling back to simple processing")
-                # Don't modify global SPACY_AVAILABLE, just note locally
-                self.spacy_working = False
-            else:
-                self.spacy_working = True
-        else:
-            self.spacy_working = False
-        
-        # Audio-specific stop words to remove (in addition to standard ones)
-        self.audio_stop_words = {
-            'sound', 'audio', 'recording', 'sample', 'track', 'file', 'piece'
-        }
+        Args:
+            max_chars: Maximum characters for combined text (default 400)
+        """
+        self.max_chars = max_chars
     
     def create_segment_embedding_text(self, segment: Dict[str, Any], 
                                     recording: Dict[str, Any] = None,
                                     segmentation: Dict[str, Any] = None) -> str:
         """
         Create embedding text for a segment using hierarchical context.
+        Uses descriptions as-is when available, minimal processing.
         Priority: segment > segmentation > recording
         """
         try:
-            # Collect context in priority order
+            # Priority 1: Segment description (local) - use as-is if good
+            segment_desc = segment.get("description", "")
+            if segment_desc and len(segment_desc.strip()) > 10:
+                # Use segment description directly - it's prompt-engineered
+                return self._normalize_text(segment_desc)
+            
+            # Fallback: Combine contexts for sparse descriptions
             contexts = []
             
-            # Priority 1: Segment description (local)
-            segment_desc = segment.get("description", "")
             if segment_desc:
-                contexts.append(("segment", segment_desc, 10))  # Up to 10 words
+                contexts.append(segment_desc)
             
             # Priority 2: Segmentation description (method context)
             if segmentation:
                 seg_desc = segmentation.get("description", "")
                 if seg_desc:
-                    contexts.append(("segmentation", seg_desc, 5))  # Up to 5 words
+                    contexts.append(seg_desc)
             
             # Priority 3: Recording description (broader context)
             if recording:
                 rec_desc = recording.get("description", "")
                 if rec_desc:
-                    contexts.append(("recording", rec_desc, 5))  # Up to 5 words
+                    contexts.append(rec_desc)
             
-            # Process and combine with expanded limits for poetic preservation
-            final_text = self._combine_contexts(contexts, target_words=25, max_words=30)
+            # Combine contexts with character limit
+            combined = self._combine_contexts(contexts)
             
-            logger.debug(f"Segment embedding text: '{final_text}' for {segment.get('_id', 'unknown')}")
-            return final_text
+            if not combined:
+                combined = "audio segment"
+            
+            logger.debug(f"Segment embedding text: '{combined}' for {segment.get('_id', 'unknown')}")
+            return combined
             
         except Exception as e:
             logger.error(f"Failed to create segment embedding text: {e}")
-            # Fallback to just segment description
-            return self._clean_text(segment.get("description", "audio segment"))
+            return self._normalize_text(segment.get("description", "audio segment"))
     
     def create_preset_embedding_text(self, preset: Dict[str, Any],
                                    effect: Dict[str, Any] = None) -> str:
         """
         Create embedding text for an effect preset.
+        Uses descriptions as-is when available.
         Priority: preset > effect
         """
         try:
+            # Priority 1: Preset description (local) - use as-is if good
+            preset_desc = preset.get("description", "")
+            if preset_desc and len(preset_desc.strip()) > 10:
+                return self._normalize_text(preset_desc)
+            
+            # Fallback: Combine contexts
             contexts = []
             
-            # Priority 1: Preset description (local)
-            preset_desc = preset.get("description", "")
             if preset_desc:
-                contexts.append(("preset", preset_desc, 12))  # Up to 12 words
+                contexts.append(preset_desc)
             
             # Priority 2: Effect description (broader context)
             if effect:
                 effect_desc = effect.get("description", "")
                 if effect_desc:
-                    contexts.append(("effect", effect_desc, 8))  # Up to 8 words
+                    contexts.append(effect_desc)
             
-            # Process and combine with expanded limits for poetic preservation
-            final_text = self._combine_contexts(contexts, target_words=25, max_words=30)
+            combined = self._combine_contexts(contexts)
             
-            logger.debug(f"Preset embedding text: '{final_text}' for preset in {effect.get('_id', 'unknown') if effect else 'unknown'}")
-            return final_text
+            if not combined:
+                combined = "effect preset"
+            
+            logger.debug(f"Preset embedding text: '{combined}' for preset in {effect.get('_id', 'unknown') if effect else 'unknown'}")
+            return combined
             
         except Exception as e:
             logger.error(f"Failed to create preset embedding text: {e}")
-            # Fallback to just preset description
-            return self._clean_text(preset.get("description", "effect preset"))
+            return self._normalize_text(preset.get("description", "effect preset"))
     
-    def _combine_contexts(self, contexts: List[tuple], target_words: int = 25, max_words: int = 30) -> str:
+    def _combine_contexts(self, contexts: list) -> str:
         """
-        Combine contexts intelligently, respecting word limits and priorities.
-        
-        Args:
-            contexts: List of (type, text, max_words) tuples in priority order
-            target_words: Aim for this many words
-            max_words: Hard limit
+        Combine context descriptions with character limit.
+        Uses descriptions as-is, just concatenates and truncates if needed.
         """
         if not contexts:
             return ""
         
-        combined_words = []
+        # Filter out empty contexts
+        valid_contexts = [self._normalize_text(ctx) for ctx in contexts if ctx and ctx.strip()]
         
-        # First pass: take words according to priority and limits
-        for context_type, text, word_limit in contexts:
-            if len(combined_words) >= max_words:
-                break
-            
-            # Process the text
-            words = self._extract_keywords(text, word_limit)
-            
-            # Add words up to our limits
-            remaining_budget = max_words - len(combined_words)
-            words_to_add = words[:min(word_limit, remaining_budget)]
-            
-            combined_words.extend(words_to_add)
+        if not valid_contexts:
+            return ""
         
-        # If we're under target, try to add more from available contexts
-        if len(combined_words) < target_words:
-            for context_type, text, original_limit in contexts:
-                if len(combined_words) >= max_words:
-                    break
-                
-                # Get more words from this context
-                all_words = self._extract_keywords(text, max_words)
-                existing_from_this_context = len([w for w in combined_words 
-                                                if w in all_words[:original_limit]])
-                
-                # Add additional words beyond original limit
-                additional_words = all_words[original_limit:]
-                remaining_budget = min(target_words - len(combined_words), 
-                                     max_words - len(combined_words))
-                
-                combined_words.extend(additional_words[:remaining_budget])
+        # If only one context, use it directly
+        if len(valid_contexts) == 1:
+            return self._truncate_text(valid_contexts[0])
         
-        # Remove duplicates while preserving order
-        seen = set()
-        unique_words = []
-        for word in combined_words:
-            if word not in seen:
-                seen.add(word)
-                unique_words.append(word)
+        # Multiple contexts: join with separator
+        combined = " | ".join(valid_contexts)
         
-        return " ".join(unique_words[:max_words])
+        return self._truncate_text(combined)
     
-    def _extract_keywords(self, text: str, max_words: int = None) -> List[str]:
-        """Extract meaningful keywords from text."""
-        if not text:
-            return []
-        
-        if self.nlp and self.spacy_working:
-            return self._extract_keywords_spacy(text, max_words)
-        else:
-            return self._extract_keywords_simple(text, max_words)
-    
-    def _extract_keywords_spacy(self, text: str, max_words: int = None) -> List[str]:
-        """Extract keywords using spaCy, preserving poetic language."""
-        try:
-            doc = self.nlp(text.lower())
-            
-            # Minimal stop words for poetic preservation
-            minimal_stop_words = {
-                'the', 'a', 'an', 'and', 'or', 'in', 'on', 'at', 'to', 'for', 
-                'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-                'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-                'should', 'may', 'might', 'this', 'that', 'these', 'those',
-                # Remove system noise
-                'auto', 'generate', 'segment', 'full', 'recording'
-            }
-            
-            keywords = []
-            for token in doc:
-                # Skip punctuation, spaces, but be more permissive with stop words
-                if (token.is_punct or token.is_space or len(token.text) < 2):
-                    continue
-                
-                # Use original word form instead of lemma to preserve poetic language
-                word = token.text.strip()
-                if word and word not in minimal_stop_words:
-                    keywords.append(word)
-            
-            # Remove duplicates while preserving order
-            seen = set()
-            unique_keywords = []
-            for word in keywords:
-                if word not in seen:
-                    seen.add(word)
-                    unique_keywords.append(word)
-            
-            return unique_keywords[:max_words] if max_words else unique_keywords
-            
-        except Exception as e:
-            logger.warning(f"spaCy processing failed: {e}, falling back to simple")
-            return self._extract_keywords_simple(text, max_words)
-    
-    def _extract_keywords_simple(self, text: str, max_words: int = None) -> List[str]:
-        """Extract keywords using simple text processing, preserving poetic flow."""
-        # Clean but preserve word forms (no aggressive cleaning)
-        text = text.lower().strip()
-        # Remove only punctuation, keep word structure
-        text = re.sub(r'[^\w\s]', ' ', text)
-        text = re.sub(r'\s+', ' ', text).strip()
-        words = text.split()
-        
-        # Minimal stop words - only remove true noise
-        minimal_stop_words = {
-            'the', 'a', 'an', 'and', 'or', 'in', 'on', 'at', 'to', 'for', 
-            'of', 'with', 'by', 'is', 'are', 'was', 'were', 'be', 'been', 'being',
-            'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-            'should', 'may', 'might', 'this', 'that', 'these', 'those',
-            # Remove system noise
-            'auto', 'generate', 'segment', 'full', 'recording'
-        }
-        
-        # Filter meaningful words but preserve poetic language
-        keywords = []
-        for word in words:
-            if len(word) > 1 and word not in minimal_stop_words:
-                keywords.append(word)
-        
-        return keywords[:max_words] if max_words else keywords
-    
-    def _clean_text(self, text: str) -> str:
-        """Basic text cleaning."""
+    def _normalize_text(self, text: str) -> str:
+        """
+        Minimal text normalization - just clean whitespace.
+        Preserves the prompt-engineered semantic content.
+        """
         if not text:
             return ""
         
-        # Convert to lowercase
-        text = str(text).lower().strip()
+        text = str(text).strip()
         
-        # Remove special characters, keep alphanumeric and spaces
-        text = re.sub(r'[^\w\s]', ' ', text)
-        
-        # Normalize whitespace
+        # Only normalize whitespace - preserve all semantic content
         text = re.sub(r'\s+', ' ', text)
         
-        return text.strip()
+        return text
+    
+    def _truncate_text(self, text: str, suffix: str = "...") -> str:
+        """
+        Truncate text to character limit if needed.
+        Tries to break at word boundaries.
+        """
+        if len(text) <= self.max_chars:
+            return text
+        
+        # Try to truncate at word boundary
+        truncate_point = self.max_chars - len(suffix)
+        
+        # Find last space before truncate point
+        last_space = text.rfind(' ', 0, truncate_point)
+        
+        if last_space > truncate_point * 0.8:  # If we don't lose too much
+            return text[:last_space] + suffix
+        else:
+            # Just truncate at character limit
+            return text[:truncate_point] + suffix
