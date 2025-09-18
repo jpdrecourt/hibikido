@@ -20,7 +20,7 @@
 					"maxclass" : "comment",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 643.5, 860.0, 150.0, 20.0 ],
+					"patching_rect" : [ 1681.0, 1285.0, 150.0, 20.0 ],
 					"text" : "Delete database"
 				}
 
@@ -33,19 +33,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "bang" ],
 					"parameter_enable" : 0,
-					"patching_rect" : [ 597.0, 858.0, 24.0, 24.0 ]
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-118",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 2,
-					"outlettype" : [ "bang", "" ],
-					"patching_rect" : [ 596.0, 1032.0, 31.0, 22.0 ],
-					"text" : "t b s"
+					"patching_rect" : [ 1643.0, 1283.0, 24.0, 24.0 ]
 				}
 
 			}
@@ -57,9 +45,8 @@
 					"numinlets" : 2,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 596.0, 1082.0, 300.0, 64.0 ],
-					"presentation_linecount" : 4,
-					"text" : ";\r\nmax launchbrowser C:/Users/jpdre/Music/Projects/250422-Lisboa-Incomum-Octo/hibikido/hibikido-data/database/reset-db.bat"
+					"patching_rect" : [ 1373.0, 1479.0, 300.0, 64.0 ],
+					"text" : ";\r\nmax launchbrowser C:/Users/jpdre/Music/Projects/250422-Lisboa-Incomum-Octo/hibikido/hibikido-interface/reset-db.bat"
 				}
 
 			}
@@ -70,20 +57,8 @@
 					"numinlets" : 1,
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
-					"patching_rect" : [ 597.0, 1002.0, 243.0, 22.0 ],
-					"text" : "sprintf \\; max launchbrowser %s/reset-db.bat"
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-121",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 1,
-					"outlettype" : [ "" ],
-					"patching_rect" : [ 597.0, 953.0, 72.0, 22.0 ],
-					"text" : "v #0-dbpath"
+					"patching_rect" : [ 1336.0, 1376.0, 239.0, 22.0 ],
+					"text" : "sprintf \\; max launchbrowser %sreset-db.bat"
 				}
 
 			}
@@ -96,17 +71,6 @@
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 338.0, 1160.0, 57.0, 22.0 ],
 					"text" : "tosymbol"
-				}
-
-			}
-, 			{
-				"box" : 				{
-					"id" : "obj-114",
-					"maxclass" : "newobj",
-					"numinlets" : 1,
-					"numoutlets" : 0,
-					"patching_rect" : [ 415.0, 1265.0, 32.0, 22.0 ],
-					"text" : "print"
 				}
 
 			}
@@ -917,7 +881,7 @@
 					"maxclass" : "newobj",
 					"numinlets" : 1,
 					"numoutlets" : 0,
-					"patching_rect" : [ 302.0, 1359.0, 109.0, 22.0 ],
+					"patching_rect" : [ 316.666666666666686, 1272.0, 109.0, 22.0 ],
 					"text" : "s #0-embed-server"
 				}
 
@@ -930,7 +894,7 @@
 					"numoutlets" : 1,
 					"outlettype" : [ "" ],
 					"patching_rect" : [ 245.0, 589.0, 452.0, 22.0 ],
-					"text" : "/invoke \"hollow metallic breath\""
+					"text" : "/flush"
 				}
 
 			}
@@ -1246,17 +1210,7 @@
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-114", 0 ],
-					"order" : 0,
-					"source" : [ "obj-113", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
 					"destination" : [ "obj-26", 0 ],
-					"midpoints" : [ 326.166666666666686, 1323.0, 311.5, 1323.0 ],
-					"order" : 1,
 					"source" : [ "obj-113", 0 ]
 				}
 
@@ -1272,35 +1226,15 @@
 , 			{
 				"patchline" : 				{
 					"destination" : [ "obj-119", 1 ],
-					"midpoints" : [ 617.5, 1070.0, 886.5, 1070.0 ],
-					"source" : [ "obj-118", 1 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-119", 0 ],
-					"source" : [ "obj-118", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-118", 0 ],
+					"midpoints" : [ 1345.5, 1465.0, 1663.5, 1465.0 ],
 					"source" : [ "obj-120", 0 ]
 				}
 
 			}
 , 			{
 				"patchline" : 				{
-					"destination" : [ "obj-120", 0 ],
-					"source" : [ "obj-121", 0 ]
-				}
-
-			}
-, 			{
-				"patchline" : 				{
-					"destination" : [ "obj-121", 0 ],
+					"destination" : [ "obj-119", 0 ],
+					"midpoints" : [ 1652.5, 1427.0, 1382.5, 1427.0 ],
 					"source" : [ "obj-123", 0 ]
 				}
 
@@ -1548,6 +1482,15 @@
 				"patchline" : 				{
 					"destination" : [ "obj-51", 0 ],
 					"source" : [ "obj-49", 0 ]
+				}
+
+			}
+, 			{
+				"patchline" : 				{
+					"destination" : [ "obj-120", 0 ],
+					"midpoints" : [ 1723.5, 1056.0, 1345.5, 1056.0 ],
+					"order" : 4,
+					"source" : [ "obj-5", 1 ]
 				}
 
 			}
