@@ -430,48 +430,6 @@ print(f"High-mid band: {len(high_onsets)} onsets")
 
 The comprehensive features enable advanced search capabilities, while Bark bands provide real-time orchestration.
 
-## Batch Processing
-
-For bulk import of audio collections, use the batch processor tool:
-
-### tools/batch_processor.py
-
-**Purpose**: Process directories of audio files and generate OSC commands for bulk import.
-
-**Features**:
-- Recursive audio file discovery (wav, mp3, flac, aiff, m4a, ogg, opus)
-- Comprehensive feature extraction for all files
-- Optional Claude API description generation
-- Generates ready-to-send OSC commands
-- Detailed error logging and progress tracking
-
-**Usage**:
-
-```bash
-# Basic processing (filename-based descriptions)
-python src/hibikido/tools/batch_processor.py /path/to/audio
-
-# With Claude API descriptions
-python src/hibikido/tools/batch_processor.py /path/to/audio \
-  --api-key YOUR_CLAUDE_KEY --generate-descriptions
-
-# Custom output directory
-python src/hibikido/tools/batch_processor.py /path/to/audio \
-  --output-dir /path/to/output
-```
-
-**Output Files**:
-- `hibikido_batch_results.json`: Complete analysis results with features
-- `hibikido_import_commands.osc`: Ready-to-send OSC commands
-- `hibikido_failed_files.log`: Files that failed processing
-
-**Integration Workflow**:
-1. Run batch processor on audio directory
-2. Copy audio files to `hibikido-data/audio/`
-3. Send OSC commands from generated .osc file to server
-
-This enables efficient bulk processing for large audio collections.
-
 ## Development Patterns
 
 ### Adding Bark Band Analysis to Existing Segments

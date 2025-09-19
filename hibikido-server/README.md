@@ -65,10 +65,8 @@ This server implements:
 - `feature_extractor.py` - Comprehensive spectral, temporal, and perceptual feature extraction
 - `bark_analyzer.py` - Perceptual audio analysis using 24 Bark frequency bands
 - `energy_analyzer.py` - Multi-band onset detection across 3 frequency ranges
-- `semantic_analyzer.py` - Claude API integration for audio descriptions
 - `tinydb_manager.py` - Database operations and schema
 - `embedding_manager.py` - Neural search and FAISS indexing
-- `tools/batch_processor.py` - Batch processing for audio collections
 
 ## Bark Band Niche Analysis
 
@@ -115,19 +113,6 @@ These features enable:
 - **Superior Search**: More accurate semantic matching through detailed audio characteristics
 - **AI Descriptions**: Claude API can generate poetic descriptions from technical features
 - **Advanced Filtering**: Search by texture, mood, spectral character, or temporal dynamics
-
-## Batch Processing
-
-For bulk imports:
-```bash
-# Process directory with comprehensive analysis
-python src/hibikido/tools/batch_processor.py /path/to/audio
-
-# Add Claude descriptions
-python src/hibikido/tools/batch_processor.py /path/to/audio --api-key KEY --generate-descriptions
-
-# Outputs OSC commands ready for server import
-```
 
 ---
 

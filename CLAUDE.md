@@ -216,27 +216,6 @@ Simplified testing approach for artistic project:
 Manual testing during creative sessions is prioritized over automated tests.
 For personal artistic tools, functional validation matters more than test coverage.
 
-### Batch Processing
-
-For bulk import of audio collections:
-
-```bash
-# Process directory without descriptions (uses filename-based descriptions)
-python src/hibikido/tools/batch_processor.py /path/to/audio
-
-# Process with automatic Claude-generated descriptions
-python src/hibikido/tools/batch_processor.py /path/to/audio \
-  --api-key YOUR_CLAUDE_KEY --generate-descriptions
-
-# Outputs hibikido_import_commands.osc with ready-to-send OSC commands
-```
-
-The batch processor:
-- Extracts comprehensive audio features from all files
-- Optionally generates semantic descriptions via Claude API
-- Creates OSC commands for bulk import
-- Handles failed files gracefully with detailed logging
-
 ### Development Patterns
 
 **Adding New OSC Commands**: Implement handler in `CommandHandlers` class, register route in `OSCRouter`.

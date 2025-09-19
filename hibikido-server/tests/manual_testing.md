@@ -78,24 +78,6 @@ Expected: Multi-band onset analysis visualization for segment ID 1
 3. Observe manifestation timing and conflict resolution
 4. Verify sounds don't conflict harmonically
 
-### Batch Processing Testing
-1. **Test batch processor:**
-   ```bash
-   python src/hibikido/tools/batch_processor.py /path/to/test/audio
-   ```
-   Expected: Generates .osc file with import commands
-
-2. **Test bulk import:**
-   - Copy audio files to hibikido-data/audio/
-   - Send OSC commands from generated file
-   - Verify all files imported correctly
-
-3. **Test AI descriptions:**
-   ```bash
-   python src/hibikido/tools/batch_processor.py /path/to/audio --api-key KEY --generate-descriptions
-   ```
-   Expected: Generates semantic descriptions for all files
-
 ### Performance Testing
 1. Load a realistic sound library (50-200 files)
 2. Test startup time with large database

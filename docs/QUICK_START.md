@@ -99,18 +99,12 @@ The `/manifest` message contains:
 /add_recording "hibikido-data/audio/synth_pad.wav" "warm analog synthesizer pad"
 ```
 
-**Option 2: Batch processor (recommended for large collections)**
+**Option 2: Multiple recordings**
 ```bash
-# Process entire directory
-python src/hibikido/tools/batch_processor.py /path/to/audio
-
-# With AI-generated descriptions
-python src/hibikido/tools/batch_processor.py /path/to/audio --api-key YOUR_CLAUDE_KEY --generate-descriptions
-
-# Copy audio files to data directory
-cp /path/to/audio/* hibikido-data/audio/
-
-# Send generated OSC commands (from hibikido_import_commands.osc)
+# Add multiple recordings via OSC
+/add_recording "forest1.wav" "morning wind through trees"
+/add_recording "forest2.wav" "birds singing at dawn"
+# ... etc for your collection
 ```
 
 ### Add Specific Segments
