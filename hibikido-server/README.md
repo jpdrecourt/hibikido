@@ -23,9 +23,6 @@ python -m hibikido.main_server --config config.json
 
 /add_segment "audio.wav" "wind gusts" "start" 0.1 "end" 0.6
 # Manual segment with full feature extraction and analysis
-
-/generate_description "segment" 123
-# Generate Claude API description for segment 123 based on audio features
 ```
 
 **Search:**

@@ -55,9 +55,6 @@ Expected: /segment_field "1" "features.spectral_entropy_mean" "8.58" (specific v
 
 Send: /visualize 1
 Expected: Multi-band onset analysis visualization for segment ID 1
-
-Send: /generate_description "segment" 1
-Expected: "generated description for segment 1" (requires Claude API key in config)
 ```
 
 ## Creative Workflow Testing

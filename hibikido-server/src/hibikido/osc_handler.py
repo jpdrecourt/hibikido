@@ -41,7 +41,6 @@ class OSCHandler:
             'flush': '/flush',
             'list_segments': '/list_segments',
             'visualize': '/visualize',
-            'generate_description': '/generate_description',
             'get_segment_field': '/get_segment_field',
             'stop': '/stop',
             

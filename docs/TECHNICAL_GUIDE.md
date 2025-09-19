@@ -123,12 +123,6 @@ Send to the server (default: `127.0.0.1:9000`):
 /add_segment "forest_01.wav" "wind gusts" "start" 0.1 "end" 0.6
 → Create segment with full feature analysis for the specified time range
 
-/generate_description "segment" 123
-→ Generate Claude API description for segment ID 123 based on audio features
-
-/generate_description "recording" 45 "force"
-→ Force regenerate description for recording ID 45 (overwrite existing)
-
 /add_effect "effects/reverb/cathedral.dll" '{"description":"gothic cathedral reverb"}'
 → Add new effect and auto-create default preset
 
@@ -335,8 +329,7 @@ Integrates with Claude API to generate poetic, evocative descriptions from techn
 from hibikido.semantic_analyzer import SemanticAnalyzer
 
 analyzer = SemanticAnalyzer("your-api-key")
-description = analyzer.generate_description(features)
-# Returns: "ethereal forest breathing with crystalline droplets dancing through misty morning silence"
+# Used internally for on-demand description generation
 ```
 
 ### bark_analyzer.py - Perceptual Audio Analysis
@@ -474,11 +467,10 @@ python src/hibikido/tools/batch_processor.py /path/to/audio \
 
 **Integration Workflow**:
 1. Run batch processor on audio directory
-2. Copy audio files to `hibikido-data/audio/`  
+2. Copy audio files to `hibikido-data/audio/`
 3. Send OSC commands from generated .osc file to server
-4. Use `/generate_description` commands for individual files as needed
 
-This enables efficient bulk processing while maintaining cost control over AI description generation.
+This enables efficient bulk processing for large audio collections.
 
 ## Development Patterns
 

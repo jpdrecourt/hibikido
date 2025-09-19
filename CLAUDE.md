@@ -188,8 +188,6 @@ hibikido-project/
 /invoke "ethereal forest breathing"  # Search and queue manifestations
 /add_recording "forest.wav" "description"  # Add recording with comprehensive feature analysis
 /add_segment "path" "desc" "start" 0.1 "end" 0.6  # Add segment with full analysis
-/generate_description "segment" 123  # Generate Claude description for segment 123
-/generate_description "recording" 45 "force"  # Force regenerate description
 /list_segments  # Show segment IDs and descriptions (first 10)
 /get_segment_field 123 "features.spectral_entropy_mean"  # Get specific field from segment
 /visualize 123  # Show multi-band onset analysis for segment ID (integer)
