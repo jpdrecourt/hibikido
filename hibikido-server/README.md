@@ -38,6 +38,12 @@ python -m hibikido.main_server --config config.json
 ```
 /stats
 → Database and orchestrator statistics
+
+/list_segments
+→ Show segment IDs and descriptions
+
+/get_segment_field 123 "features.spectral_entropy_mean"
+→ Get specific field from segment data
 ```
 
 See [Technical Guide](../docs/TECHNICAL_GUIDE.md) for complete OSC protocol reference.

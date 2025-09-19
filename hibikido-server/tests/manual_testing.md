@@ -50,6 +50,9 @@ Then: /manifest message with audio file details
 Send: /list_segments
 Expected: List of segments with IDs and descriptions
 
+Send: /get_segment_field 1 "features.spectral_entropy_mean"
+Expected: /segment_field "1" "features.spectral_entropy_mean" "8.58" (specific value will vary)
+
 Send: /visualize 1
 Expected: Multi-band onset analysis visualization for segment ID 1
 

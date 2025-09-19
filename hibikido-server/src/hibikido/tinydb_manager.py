@@ -117,8 +117,16 @@ class HibikidoDatabase:
         except Exception as e:
             logger.error(f"Failed to get recordings: {e}")
             return []
-    
+
     # SEGMENTS METHODS (reference by source_path)
+
+    def get_all_segments(self) -> List[Dict[str, Any]]:
+        """Get all segments."""
+        try:
+            return self.segments_db.all()
+        except Exception as e:
+            logger.error(f"Failed to get segments: {e}")
+            return []
     
     def add_segment(self, source_path: str, segmentation_id: str,
                    start: float, end: float, description: str,

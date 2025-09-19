@@ -136,6 +136,9 @@ Response: /stats_result [recordings] [segments] [effects] [presets] [embeddings]
 Send: /list_segments
 Response: Lists first 10 segments with IDs and descriptions
 
+Send: /get_segment_field 123 "features.spectral_entropy_mean"
+Response: /segment_field "123" "features.spectral_entropy_mean" "8.58"
+
 Send: /visualize 123
 Response: Shows multi-band onset analysis for segment ID 123
 ```

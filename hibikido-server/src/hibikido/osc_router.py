@@ -34,6 +34,7 @@ class OSCRouter:
             'list_segments': command_handlers.handle_list_segments,
             'visualize': command_handlers.handle_visualize,
             'generate_description': command_handlers.handle_generate_description,
+            'get_segment_field': command_handlers.handle_get_segment_field,
             'stop': command_handlers.handle_stop
         }
         
@@ -65,6 +66,7 @@ class OSCRouter:
         print("  /list_segments                   - show segment IDs and descriptions (first 10)")
         print("  /visualize <segment_id>          - show multi-band onset analysis for segment")
         print("  /generate_description \"type\" <id> [\"force\"] - generate Claude description for recording/segment")
+        print("  /get_segment_field <segment_id> \"field_name\" - get specific field value from segment")
         print("  /free \"manifestation_id\"        - manually free manifestation niche")
         print("  /flush                           - flush database cache to JSON files")
         print("  /stop                            - shutdown server")

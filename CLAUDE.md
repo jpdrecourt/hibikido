@@ -169,6 +169,19 @@ hibikido-project/
 4. Frequency conflict resolution using logarithmic overlap
 5. `/manifest` messages sent when niches are available
 
+### OSC Message Formats
+
+**Manifest Message** (sent when sound can play):
+```
+/manifest [manifestation_id] [collection] [score] [path] [description] [start] [end] [parameters]
+```
+- `parameters`: JSON string containing metadata (e.g., `{"segment_id": "123"}`)
+
+**Segment Field Response** (response to `/get_segment_field`):
+```
+/segment_field [segment_id] [field_name] [value]
+```
+
 ### Key OSC Commands
 
 ```
@@ -178,6 +191,7 @@ hibikido-project/
 /generate_description "segment" 123  # Generate Claude description for segment 123
 /generate_description "recording" 45 "force"  # Force regenerate description
 /list_segments  # Show segment IDs and descriptions (first 10)
+/get_segment_field 123 "features.spectral_entropy_mean"  # Get specific field from segment
 /visualize 123  # Show multi-band onset analysis for segment ID (integer)
 /stats  # Database and orchestrator status
 /rebuild_index  # Regenerate embeddings

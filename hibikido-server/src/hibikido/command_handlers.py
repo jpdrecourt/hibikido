@@ -83,6 +83,7 @@ class CommandHandlers:
                 sound_id = str(getattr(document, 'doc_id', document.get('source_path', 'unknown')))
                 
                 # Prepare manifestation data
+                segment_id = str(getattr(document, 'doc_id', 'unknown'))
                 manifestation_data = {
                     "index": i,
                     "collection": "segments",
@@ -93,7 +94,7 @@ class CommandHandlers:
                     ),
                     "start": float(document.get("start", 0.0)),
                     "end": float(document.get("end", 1.0)),
-                    "parameters": "[]",  # Empty for segments
+                    "parameters": json.dumps({"segment_id": segment_id}),
                     "sound_id": sound_id,
                     "bark_bands_raw": bark_bands_raw,
                     "bark_norm": bark_norm
@@ -791,7 +792,70 @@ class CommandHandlers:
             error_msg = f"generate_description failed: {e}"
             logger.error(error_msg)
             self.osc_handler.send_error(error_msg)
-    
+
+    def handle_get_segment_field(self, unused_addr: str, *args):
+        """
+        Handle get segment field requests - returns specific field value for a segment.
+
+        OSC: /get_segment_field [segment_id] [field_name]
+        Returns: /segment_field [segment_id] [field_name] [value]
+        """
+        try:
+            parsed = self.osc_handler.parse_args(*args)
+            segment_id_str = parsed.get('arg1', '').strip()
+            field_name = parsed.get('arg2', '').strip()
+
+            if not segment_id_str or not field_name:
+                self.osc_handler.send_error("get_segment_field requires segment_id and field_name")
+                return
+
+            try:
+                segment_id = int(segment_id_str)
+            except ValueError:
+                self.osc_handler.send_error(f"invalid segment_id: {segment_id_str}")
+                return
+
+            # Get all segments and find the requested one by doc_id
+            segments = self.db_manager.get_all_segments()
+            target_segment = None
+            for s in segments:
+                if s.doc_id == segment_id:
+                    target_segment = s
+                    break
+
+            if target_segment is None:
+                self.osc_handler.send_error(f"segment not found: {segment_id}")
+                return
+
+            # Get the requested field
+            if hasattr(target_segment, field_name):
+                field_value = getattr(target_segment, field_name)
+            elif field_name in target_segment:
+                field_value = target_segment[field_name]
+            elif field_name.startswith('features.') and 'features' in target_segment:
+                # Handle nested features access like "features.spectral_entropy_mean"
+                feature_key = field_name.split('.', 1)[1]
+                features = target_segment.get('features', {})
+                if feature_key in features:
+                    field_value = features[feature_key]
+                else:
+                    self.osc_handler.send_error(f"feature not found: {feature_key}")
+                    return
+            else:
+                self.osc_handler.send_error(f"field not found: {field_name}")
+                return
+
+            # Send the result
+            self.osc_handler.client.send_message(self.osc_handler.addresses['segment_field'], [
+                str(segment_id), field_name, str(field_value)
+            ])
+            logger.debug(f"Sent segment field: {segment_id}.{field_name} = {field_value}")
+
+        except Exception as e:
+            error_msg = f"get_segment_field failed: {e}"
+            logger.error(error_msg)
+            self.osc_handler.send_error(error_msg)
+
     def handle_stop(self, unused_addr: str, *args):
         """Handle stop requests."""
         logger.info("Received stop command")

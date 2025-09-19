@@ -144,6 +144,9 @@ Send to the server (default: `127.0.0.1:9000`):
 /list_segments
 → Show segment IDs and descriptions (first 10)
 
+/get_segment_field 123 "features.spectral_entropy_mean"
+→ Get specific field value from segment (supports nested field access)
+
 /visualize 123
 → Show multi-band onset analysis visualization for segment ID (integer)
 
@@ -166,13 +169,14 @@ Each manifestation is sent as a separate message with 8 fields:
 - `description`: Human-readable description from embedding text
 - `start`: Start position (0.0-1.0, normalized, 0.0 for presets)
 - `end`: End position (0.0-1.0, normalized, 0.0 for presets)
-- `parameters`: Effect parameters as JSON string (presets only, "[]" for segments)
+- `parameters`: JSON string with metadata (segments include `{"segment_id": "123"}`, presets contain effect parameters)
 
 **Status Messages**:
 
 - `/confirm "message"` - Acknowledgments
 - `/error "message"` - When operations fail
 - `/stats_result [recordings, segments, effects, presets, embeddings, active_niches, queued]` - Database and orchestrator statistics
+- `/segment_field [segment_id] [field_name] [value]` - Response to `/get_segment_field` requests
 
 Note: Manifestations arrive over time as the orchestrator permits, following harmonic law rather than immediate demand.
 

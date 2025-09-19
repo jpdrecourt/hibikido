@@ -42,6 +42,7 @@ class OSCHandler:
             'list_segments': '/list_segments',
             'visualize': '/visualize',
             'generate_description': '/generate_description',
+            'get_segment_field': '/get_segment_field',
             'stop': '/stop',
             
             # Output addresses
@@ -49,6 +50,7 @@ class OSCHandler:
             'niche': '/niche',       # Niche status for ecosystem visualization
             'confirm': '/confirm',
             'stats_result': '/stats_result',
+            'segment_field': '/segment_field',
             'error': '/error'
             # Removed 'search_complete'
         }
